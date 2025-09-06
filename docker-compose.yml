@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # MongoDB数据库
+  mongodb:
+    image: mongo:7.0
+    container_name: aicoro_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: aicoro
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - aicoro_network
+
+  # 后端服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aicoro_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      MONGODB_URL: mongodb://admin:password@mongodb:27017/aicoro?authSource=admin
+      MONGODB_DB_NAME: aicoro
+      JWT_SECRET_KEY: your-production-secret-key-change-this
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      DEEPSEEK_BASE_URL: https://api.deepseek.com
+    depends_on:
+      - mongodb
+    networks:
+      - aicoro_network
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: aicoro_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - aicoro_network
+
+volumes:
+  mongodb_data:
+
+networks:
+  aicoro_network:
+    driver: bridge
