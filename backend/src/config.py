@@ -1,6 +1,6 @@
 """配置文件"""
 import os
-from typing import Optional
+from typing import Optional,List
 from pydantic import BaseModel
 
 
@@ -14,9 +14,22 @@ class Settings(BaseModel):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 30
     
+    
+    
+    # LLM 的api配置
+    # 支持的模型
+    supported_LLM :List[str] = [
+        "deepseek-chat",
+        "deepseek-reasoner"
+    ]
     # DeepSeek API配置
-    deepseek_api_key: Optional[str] = "test-api-key"  # 默认测试密钥
     deepseek_base_url: str = "https://api.deepseek.com"
+    deepseek_api_key: Optional[str] = "sk-b879ea4cf9fa413e86e2f93167c817b2"
+    
+    deepseek_chat_model: str = "deepseek-chat"
+    deepseek_reasoner_model: str = "deepseek-reasoner"
+    
+    
     
     # CORS配置
     cors_origins: list = ["http://localhost:5173", "http://localhost:3000"]
@@ -29,8 +42,9 @@ class Settings(BaseModel):
         self.jwt_secret_key = os.getenv("JWT_SECRET_KEY", self.jwt_secret_key)
         self.jwt_algorithm = os.getenv("JWT_ALGORITHM", self.jwt_algorithm)
         self.jwt_access_token_expire_minutes = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", self.jwt_access_token_expire_minutes))
-        self.deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
-        self.deepseek_base_url = os.getenv("DEEPSEEK_BASE_URL", self.deepseek_base_url)
 
+    
+    # code agent configs
+    base_code_dir :str = "/home/niu/code/AIcoro/backend/src/ai_code_agent"
 
 settings = Settings()

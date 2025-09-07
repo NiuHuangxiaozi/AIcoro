@@ -1,8 +1,10 @@
 """聊天路由"""
 from datetime import datetime
 from typing import List
+import os
 from fastapi import APIRouter, HTTPException, status, Depends
 from ..database import get_database
+from ..config import settings
 from ..models import (
     ChatRequest, 
     ChatResponse, 
@@ -22,8 +24,14 @@ async def send_message(
     chat_request: ChatRequest,
     current_user: User = Depends(get_current_user)
 ):
+    
+    '''
+        第一个chat_request来自于前端发来的消息，
+        第二个是来源于depends函数
+    '''
     """发送消息"""
     db = get_database()
+    
     
     # 创建用户消息
     user_message = Message(
@@ -57,11 +65,15 @@ async def send_message(
         session.messages.append(user_message)
     
     # 生成AI响应
-    ai_response_content = await chat_service.generate_response(session.messages, chat_request.model)
-    
+    # 拓展：这里可以改变模型的生成方式
+    ai_response_content = await chat_service.generate_response(session.messages,
+                                                               chat_request.mode,
+                                                               chat_request.model,
+                                                               code_generation_root_dir='_'.join([str(session.id)+'/', str(session.user_id),"dir"])
+                                                               )
     # 创建AI消息
     ai_message = Message(
-        content=ai_response_content,
+        content=ai_response_content or "AI暂无响应",
         role="assistant"
     )
     

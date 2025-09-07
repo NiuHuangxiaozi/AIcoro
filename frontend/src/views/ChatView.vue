@@ -104,30 +104,48 @@
             ref="messageInput"
           ></textarea>
           
-          <div class="input-actions">
-            <select v-model="selectedModel" class="model-select">
-              <option value="deepseek-chat">DeepSeek Chat</option>
-              <option value="deepseek-coder">DeepSeek Coder</option>
-            </select>
-            
-            <button
-              class="btn btn-primary send-btn"
-              @click="sendMessage"
-              :disabled="!inputMessage.trim() || sending"
-            >
-              <div v-if="sending" class="loading"></div>
-              {{ sending ? '发送中' : '发送' }}
-            </button>
+          <div class="action-container">
+            <div class="input-actions">
+              <Select v-model="selectedModel" class="model-select">
+                <Option value="deepseek-chat">DeepSeek Chat</Option>
+                <Option value="deepseek-reasoner">DeepSeek Reasoner</Option>
+              </Select>
+              
+              <Select v-model="selectedMode" class="mode-select">
+                  <Option value="Ask">Ask</Option>
+                  <Option value="Agent">Agent[⭐New⭐]</Option>
+              </Select>
+            </div>
+            <div>
+              <button
+                class="btn btn-primary send-btn"
+                @click="sendMessage"
+                :disabled="!inputMessage.trim() || sending"
+              >
+                <div v-if="sending" class="loading"></div>
+                {{ sending ? '发送中' : '发送' }}
+              </button>
+            </div>
           </div>
+
         </div>
       </div>
     </div>
   </div>
 </template>
 
+
+
+
+
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { Select, Option } from 'view-ui-plus'
+
+
+
+
 
 // @ 这里代表的就是src目录
 import { useAuthStore } from '@/stores/auth'
@@ -140,6 +158,10 @@ const chatStore = useChatStore()
 // 响应式数据
 const inputMessage = ref('')
 const selectedModel = ref('deepseek-chat')
+
+// 默认我们是ask模式而不是agent模式
+const selectedMode = ref("Ask")
+
 const messagesContainer = ref(null)
 const messageInput = ref(null)
 
@@ -190,9 +212,15 @@ const sendMessage = async () => {
   }
 
   try {
-    await chatStore.sendMessage(message, selectedModel.value)
+    await chatStore.sendMessage(message, selectedModel.value, selectedMode.value)
     scrollToBottom()
-  } catch (error) {
+    if(selectedMode.value == "Agent"){
+      // 展示ai写的代码
+      router.push("/tmpcode")
+    }
+
+  } 
+  catch (error) {
     console.error('发送消息失败:', error)
     alert('发送失败，请重试')
   }
@@ -227,6 +255,7 @@ const formatTime = (dateString) => {
   })
 }
 
+// 这个函数就是快速的滑倒底部，就是在有新消息后调用，这样用户能看到最新的消息 
 const scrollToBottom = async () => {
   await nextTick()
   if (messagesContainer.value) {
@@ -538,18 +567,33 @@ onMounted(async () => {
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
-.input-actions {
+
+
+/* .action-container input-actions .model-select .mode-select 与模型选择和发送按钮有关*/
+.action-container {
   display: flex;
   justify-content: space-between;
+}
+.input-actions {
+  display: flex;
+  justify-content: flex-start;
   align-items: center;
+  gap: 15px;
 }
 
 .model-select {
-  padding: 8px 12px;
+  padding: 10px;
   border: 1px solid #ddd;
   border-radius: 6px;
   font-size: 14px;
-  background: white;
+  background: wheat;
+}
+.mode-select {
+  padding: 10px;
+  border-radius: 6px;
+  border: solid #ddd;
+  font-size: 14px;
+  background-color: wheat;
 }
 
 .send-btn {

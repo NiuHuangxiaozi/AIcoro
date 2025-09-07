@@ -65,6 +65,7 @@ class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
     model: str = "deepseek-chat"
+    mode: str = "Ask"
 
 
 class ChatResponse(BaseModel):
