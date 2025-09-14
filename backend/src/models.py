@@ -14,6 +14,7 @@ class User(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+# 一般的文本回答
 class Message(BaseModel):
     """消息模型"""
     id: str = Field(default_factory=lambda: str(uuid4()))
@@ -21,6 +22,11 @@ class Message(BaseModel):
     role: str  # "user" 或 "assistant"
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
+# 代码生成的回答
+class CodeMessage(Message):
+    # 前端向这个路径请求代码显示
+    root_path: str 
+    
 
 class Session(BaseModel):
     """会话模型"""
@@ -72,6 +78,7 @@ class ChatResponse(BaseModel):
     """聊天响应"""
     message: Message
     session_id: str
+    
 
 
 class SessionResponse(BaseModel):

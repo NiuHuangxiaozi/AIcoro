@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import connect_to_mongo, close_mongo_connection
-from .routers import auth, chat
+from .routers import auth, chat, code
 from .config import settings
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -38,6 +38,7 @@ app.add_middleware(
 # 注册路由
 app.include_router(auth.router)
 app.include_router(chat.router)
+app.include_router(code.router)
 
 
 @app.get("/")

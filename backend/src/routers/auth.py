@@ -63,11 +63,14 @@ async def login(user_data: UserLogin):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # 时间差对象
     access_token_expires = timedelta(minutes=settings.jwt_access_token_expire_minutes)
+    
     access_token = create_access_token(
         data={"sub": user.id}, expires_delta=access_token_expires
     )
     
+    # 将access_token返回给前端，以后前端只要拿到了这个access_token就可以访问后端的任何接口数据
     return TokenResponse(
         access_token=access_token,
         user=UserResponse(
