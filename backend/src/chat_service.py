@@ -53,7 +53,7 @@ class ChatService:
             # 根据不同模式选择响应策略
             if mode == "Ask":
                 # 普通对话模式
-                model_answer = await self._get_nonstreaming_response(messages, mode, model)
+                model_answer = self._get_nonstreaming_response(messages, mode, model)
             elif mode == "Agent":
                 # 代码生成agent模式
                 model_answer = self._code_agent_llm_generate_response(
@@ -63,7 +63,7 @@ class ChatService:
                 )
             else:
                 # 未知模式，默认使用Ask模式
-                model_answer = await self._get_nonstreaming_response(messages, "Ask", model)
+                model_answer = self._get_nonstreaming_response(messages, "Ask", model)
             
             return model_answer
             
@@ -104,31 +104,15 @@ class ChatService:
         
         return model_answer
 
-    
-    
-    # def _get_streaming_response(self, messages: List[Message], model: str = "deepseek-chat") -> StreamingResponse:
-    #     """返回FastAPI StreamingResponse，用于前端实时显示"""
-    #     async def sse_generator():
-    #         async for delta in self._stream_llm_response(messages, model=model):
-    #             # SSE 格式
-    #             yield f"event: message\ndata: {json.dumps({'delta': delta})}\n\n"
-    #         yield "event: end\ndata: [DONE]\n\n"
-        
-    #     return StreamingResponse(sse_generator(), media_type="text/event-stream")
-    
-    
-    async def _get_nonstreaming_response(
+    # 非流式传输数据
+    def _get_nonstreaming_response(
         self, 
         messages: List[Message], 
         mode: str = "Ask", 
         model: str = "deepseek-chat"
     ) -> str:
         """
-        生成完整的AI响应，通过累积流式响应来构建完整内容
-        
-        该方法内部调用_get_streaming_response，并将所有增量内容
-        累积成完整响应，适用于需要完整响应的场景。
-        
+        生成完整的AI响应，通过调用DeepSeek的非流式接口        
         Args:
             messages: 对话消息历史列表
             mode: 对话模式（Ask/Agent等）
@@ -137,22 +121,38 @@ class ChatService:
         Returns:
             str: 完整的AI响应内容
         """
-        accumulated_content = []
-        
+        #  会话里面添加message，然后不断地往里面填充
+    
+    
+        # 将后端message格式转化为模型需要的格式
+        formatted_messages = []
+        for message in messages:
+            formatted_messages.append({
+                "role": message.role,
+                "content": message.content
+            })
         try:
-            # 通过流式响应累积完整内容
-            async for delta in self._get_streaming_response(messages, model=model):
-                # 跳过结束标记
-                if delta == "##Do##ne##":
-                    break
-                accumulated_content.append(delta)
-            
-            final_response = "".join(accumulated_content)
-            return final_response
-            
+            if model == "deepseek-chat":
+                response = self.client.chat.completions.create(
+                            model=settings.deepseek_chat_model,
+                            messages=formatted_messages,
+                            stream=False
+                    )
+            else:
+                raise ValueError(f"Unsupported model: {model}")
+
+            return response.choices[0].message.content
+    
+        except httpx.HTTPError as e:
+            # 处理HTTP请求异常
+            error_message = f"HTTP请求错误: {str(e)}"
+            print(error_message)
+            return error_message
         except Exception as e:
-            # 如果流式响应失败，返回错误信息
-            return f"生成响应时出错: {str(e)}"
+            # 处理其他异常
+            error_message = f"生成AI响应时出错: {str(e)}"
+            print(error_message)
+            return error_message
     
     
     # 生成假的数据
