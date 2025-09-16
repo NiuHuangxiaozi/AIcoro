@@ -5,8 +5,8 @@ import axios from 'axios'
 
 // 创建axios实例
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
-  timeout: 60000 * 10,
+  baseURL: import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000',
+  timeout: import.meta.env.VITE_BACKEND_EXPIRED_TIME || 60000 * 10,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -72,6 +72,29 @@ export const chatAPI = {
   
   // 删除会话
   deleteSession: (sessionId) => api.delete(`/chat/sessions/${sessionId}`)
+}
+
+// 代码管理API
+export const codeAPI = {
+  // 获取项目列表
+  getProjects: () => api.get('/code/projects'),
+  
+  // 获取项目文件树
+  getProjectTree: (projectName) => api.get(`/code/projects/tree`,{
+    params: { project_name:projectName}
+  }),
+  
+  // 获取文件内容
+  getFileContent: (projectName, filePath) => api.get(`/code/projects/files`, {
+    params: { project_name: projectName,
+            file_path:filePath }
+  }),
+  
+  // 下载项目
+  downloadProject: (projectName) => api.get(`/code/projects/download`, {
+    params: { project_name: projectName},
+    responseType: 'blob'
+  })
 }
 
 export default api

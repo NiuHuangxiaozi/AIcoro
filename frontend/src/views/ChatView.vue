@@ -16,6 +16,7 @@
           :class="['session-item', { active: currentSession?.id === session.id }]"
           @click="selectSession(session)"
         >
+          <!-- 这里是session的简介绍，就是更新时间和消息数目 -->
           <div class="session-info">
             <div class="session-title">{{ session.title }}</div>
             <div class="session-meta">
@@ -56,7 +57,9 @@
 
       <!-- 消息区域 -->
       <div class="messages-container" ref="messagesContainer">
+        
         <div class="messages-list">
+
           <div
             v-for="message in messages"
             :key="message.id"
@@ -69,10 +72,24 @@
               <div v-else class="avatar ai-avatar">AI</div>
             </div>
             
+            <!-- 这里就是每一条消息的展示，显示内容和时间戳 -->
             <div class="message-content">
               <div class="message-text">{{ message.content }}</div>
+
+              <!-- 当存在root_path时显示查看代码按钮 -->
+              <div v-if="message.root_path" class="message-actions">
+                <button 
+                  class="view-code-btn"
+                  @click="handleViewCode(message.root_path)"
+                >
+                  查看代码
+                </button>
+              </div>
+  
               <div class="message-time">{{ formatTime(message.timestamp) }}</div>
             </div>
+
+
           </div>
           
           <!-- 加载中提示 -->
@@ -83,16 +100,19 @@
             <div class="message-content">
               <div class="message-text typing">
                 <div class="loading"></div>
-                正在思考...
+                AI正在输入...
               </div>
             </div>
           </div>
+
         </div>
+      
       </div>
 
       <!-- 输入区域 -->
       <div class="input-area">
         <div class="input-container">
+
           <textarea
             v-model="inputMessage"
             class="message-input"
@@ -107,16 +127,17 @@
           <div class="action-container">
             <div class="input-actions">
               <Select v-model="selectedModel" class="model-select">
-                <Option value="deepseek-chat">DeepSeek Chat</Option>
-                <Option value="deepseek-reasoner">DeepSeek Reasoner</Option>
+                <Option value="deepseek-chat" style="background-color: antiquewhite;">DeepSeek Chat</Option>
+                <Option value="deepseek-reasoner" style="background-color: antiquewhite;">DeepSeek Reasoner</Option>
               </Select>
               
               <Select v-model="selectedMode" class="mode-select">
-                  <Option value="Ask">Ask</Option>
-                  <Option value="Agent">Agent[⭐New⭐]</Option>
+                  <Option value="Ask" style="background-color: lightgreen;">Ask</Option>
+                  <Option value="Agent" style="background-color: lightgreen;">Agent[⭐New⭐]</Option>
               </Select>
             </div>
             <div>
+
               <button
                 class="btn btn-primary send-btn"
                 @click="sendMessage"
@@ -139,7 +160,7 @@
 
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Select, Option } from 'view-ui-plus'
 
@@ -166,6 +187,9 @@ const messagesContainer = ref(null)
 const messageInput = ref(null)
 
 // 计算属性
+// 这里讲一下messagees的响应逻辑，只要chatStore.messages 里面的信息发生变化，computed就会立即捕捉，然后刷新显示
+// 比如在页面加载好之后有这样的调用流：
+// onMounted -> chatStore.initChat -> createNewSession -> 修改了chatStore.message ->有computed，修改了上面的message，然后刷新显示
 const user = computed(() => authStore.user)
 const sessions = computed(() => chatStore.sessions)
 const currentSession = computed(() => chatStore.currentSession)
@@ -198,6 +222,8 @@ const deleteSessionConfirm = async (sessionId) => {
   }
 }
 
+
+// 向后端请求模型的回答信息
 const sendMessage = async () => {
   if (!inputMessage.value.trim() || sending.value) {
     return
@@ -212,13 +238,8 @@ const sendMessage = async () => {
   }
 
   try {
-    await chatStore.sendMessage(message, selectedModel.value, selectedMode.value)
+    await chatStore.streamGetMessage(message, selectedModel.value, selectedMode.value)
     scrollToBottom()
-    if(selectedMode.value == "Agent"){
-      // 展示ai写的代码
-      router.push("/tmpcode")
-    }
-
   } 
   catch (error) {
     console.error('发送消息失败:', error)
@@ -263,6 +284,9 @@ const scrollToBottom = async () => {
   }
 }
 
+
+
+
 // 自动调整输入框高度
 const adjustTextareaHeight = () => {
   const textarea = messageInput.value
@@ -272,26 +296,62 @@ const adjustTextareaHeight = () => {
   }
 }
 
+
 // 监听输入变化
 watch(inputMessage, () => {
   nextTick(adjustTextareaHeight)
 })
 
+
 // 监听消息变化，自动滚动到底部
 watch(messages, () => {
+  console.log("messages[messages.length - 1].content is ", messages.value[messages.value.length - 1])
   scrollToBottom()
-}, { deep: true })
+},
+ { deep: true }
+)
 
 // 组件挂载时初始化
 onMounted(async () => {
   try {
     await chatStore.initChat()
     scrollToBottom()
+    
+    // 监听来自store的滚动事件
+    window.addEventListener('chat-scroll-to-bottom', scrollToBottom)
   } catch (error) {
     console.error('初始化聊天失败:', error)
   }
 })
+
+// 组件卸载时清理事件监听器
+onUnmounted(() => {
+  window.removeEventListener('chat-scroll-to-bottom', scrollToBottom)
+})
+
+
+
+  //  add in 2025/9/9
+  // 处理查看代码按钮点击事件
+  const handleViewCode = (rootPath) => {
+    // 导航到代码展示页面，并通过路由参数传递root_path
+    router.push({
+      path: '/tmpcode',
+      query: {
+        rootPath: rootPath // 通过查询参数传递
+      }
+    })
+    
+    // 如果你需要使用路由参数而不是查询参数，可以这样写：
+    // 注意：需要在路由配置中定义对应的参数，例如：/tmpcode/:rootPath
+    // router.push(`/tmpcode/${encodeURIComponent(rootPath)}`)
+  }
+
 </script>
+
+
+
+
 
 <style scoped>
 .chat-container {
@@ -585,15 +645,16 @@ onMounted(async () => {
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 6px;
+  border-color: #333;
   font-size: 14px;
-  background: wheat;
+  background: peru;
 }
 .mode-select {
   padding: 10px;
   border-radius: 6px;
   border: solid #ddd;
   font-size: 14px;
-  background-color: wheat;
+  background-color: palegreen;
 }
 
 .send-btn {
@@ -641,6 +702,30 @@ onMounted(async () => {
   
   .send-btn {
     align-self: flex-end;
+  }
+
+
+
+  /*  
+    下面三个样式都是关于code agent在生成回答的时候会生成一个按钮，这是那个按钮的样式
+  */
+  .message-actions {
+  margin: 8px 0;
+  }
+
+  .view-code-btn {
+    padding: 4px 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+  }
+
+  .view-code-btn:hover {
+    background-color: #0056b3;
   }
 }
 </style>
