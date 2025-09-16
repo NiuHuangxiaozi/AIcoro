@@ -1,12 +1,12 @@
 """聊天服务"""
 import httpx
 import os
+import json
 from typing import List, Dict, Any
 from .config import settings
 from .models import Message
-import dotenv
 from openai import OpenAI
-dotenv.load_dotenv()
+from  fastapi.responses import StreamingResponse
 
 class ChatService:
     """聊天服务类"""
@@ -15,69 +15,147 @@ class ChatService:
         self.api_key = settings.deepseek_api_key
         self.base_url = settings.deepseek_base_url
         
-        self.client = OpenAI(api_key="sk-b879ea4cf9fa413e86e2f93167c817b2", base_url=os.getenv("DEEPSEEK_BASE_URL"))
+        self.client = OpenAI(api_key=settings.deepseek_api_key,
+                             base_url=settings.deepseek_base_url
+                             )
 
     
-    async def generate_response(self, messages: List[Message], model: str = "deepseek-chat") -> str:
-        """生成AI响应"""
+    async def generate_response(
+        self,
+        messages: List[Message],
+        mode: str = "Ask",
+        model: str = "deepseek-chat",
+        **kwargs
+    ) -> str:
+        """
+        生成AI响应的主入口方法
+        
+        根据不同的模式和配置，选择合适的响应生成策略：
+        - Ask模式: 普通对话响应
+        - Agent模式: 代码生成agent响应
+        
+        Args:
+            messages: 对话消息历史列表
+            mode: 对话模式（Ask/Agent）
+            model: 使用的LLM模型名称
+            **kwargs: 其他配置参数
+            
+        Returns:
+            str: 生成的AI响应内容
+        """
+        # 检查API密钥配置
         if not self.api_key or self.api_key == "test-api-key":
-            # 返回模拟响应用于演示
+            # 返回模拟响应用于演示和测试
             user_message = messages[-1].content if messages else ""
             return self._generate_mock_response(user_message, model)
         
-        # 转换消息格式为OpenAI API格式
-        formatted_messages = []
-        for msg in messages:
-            formatted_messages.append({
-                "role": msg.role,
-                "content": msg.content
-            })
-        
-        # 如果没有系统消息，添加一个
-        if not formatted_messages or formatted_messages[0]["role"] != "system":
-            formatted_messages.insert(0, {
-                "role": "system",
-                "content": "你是一个友善、有用的AI助手。请用中文回答用户的问题。"
-            })
-        
         try:
-            # async with httpx.AsyncClient() as client:
-                # response = await client.post(
-                #     f"{self.base_url}/chat/completions",
-                #     headers={
-                #         "Authorization": f"Bearer {self.api_key}",
-                #         "Content-Type": "application/json"
-                #     },
-                #     json={
-                #         "model": model,
-                #         "messages": formatted_messages,
-                #         "max_tokens": 2000,
-                #         "temperature": 0.7,
-                #         "stream": False
-                #     },
-                #     timeout=30.0
-                # )
-                response = self.client.chat.completions.create(
-                    model="deepseek-chat",
-                    messages=formatted_messages,
-                    stream=False
+            # 根据不同模式选择响应策略
+            if mode == "Ask":
+                # 普通对话模式
+                model_answer = self._get_nonstreaming_response(messages, mode, model)
+            elif mode == "Agent":
+                # 代码生成agent模式
+                model_answer = self._code_agent_llm_generate_response(
+                    messages=messages, 
+                    model=model, 
+                    **kwargs
                 )
-                
-                
-                return response.choices[0].message.content
-                
-        except httpx.TimeoutException:
-            return "抱歉，AI服务响应超时，请稍后再试。"
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 401:
-                return "抱歉，AI服务认证失败，请联系管理员检查API密钥。"
-            elif e.response.status_code == 429:
-                return "抱歉，请求过于频繁，请稍后再试。"
             else:
-                return f"抱歉，AI服务出现错误：{e.response.status_code}"
+                # 未知模式，默认使用Ask模式
+                model_answer = self._get_nonstreaming_response(messages, "Ask", model)
+            
+            return model_answer
+            
         except Exception as e:
-            return f"抱歉，服务出现未知错误：{str(e)}"
+            # 生成响应时的异常处理
+            error_message = f"生成AI响应时出错: {str(e)}"
+            print(error_message)
+            return error_message
     
+    
+    def _code_agent_llm_generate_response(self,
+                                          messages: List[Message],
+                                          model: str = "deepseek-reasoner",
+                                          **kwargs):
+        '''
+            自己写代码的ai agent, 算法： ReAct
+        '''
+        from .ai_code_agent.agent import get_code_agent_response
+        
+        # 检查模型
+        if model not in settings.supported_LLM:
+            return f"Current system can not support model {model}!"
+        
+        # 检查文件路径
+        if "code_generation_root_dir" in kwargs:
+            tar_dir = kwargs["code_generation_root_dir"]
+        else:
+            return ("in Function _code_agent_llm_generate_response: \
+                kwargs has no code_generation_root_dir variable, the backend can not refer to correct code generation base_dir!!!!")
+        
+        os.makedirs(tar_dir, exist_ok=True)
+        print(f"创建了独立代码目录！！！")
+        
+        messages[-1].content += f"你是一个经验丰富的程序员，请在指定的文件路径：{tar_dir} 进行代码编写 要求：\
+            1.所有的操作都在上面的路径下进行，不能修改路径外的任何东西 2.代码简介规范有注释"
+        
+        model_answer : str = get_code_agent_response(messages, tar_dir, model)
+        
+        return model_answer
+
+    # 非流式传输数据
+    def _get_nonstreaming_response(
+        self, 
+        messages: List[Message], 
+        mode: str = "Ask", 
+        model: str = "deepseek-chat"
+    ) -> str:
+        """
+        生成完整的AI响应，通过调用DeepSeek的非流式接口        
+        Args:
+            messages: 对话消息历史列表
+            mode: 对话模式（Ask/Agent等）
+            model: 使用的LLM模型名称
+            
+        Returns:
+            str: 完整的AI响应内容
+        """
+        #  会话里面添加message，然后不断地往里面填充
+    
+    
+        # 将后端message格式转化为模型需要的格式
+        formatted_messages = []
+        for message in messages:
+            formatted_messages.append({
+                "role": message.role,
+                "content": message.content
+            })
+        try:
+            if model == "deepseek-chat":
+                response = self.client.chat.completions.create(
+                            model=settings.deepseek_chat_model,
+                            messages=formatted_messages,
+                            stream=False
+                    )
+            else:
+                raise ValueError(f"Unsupported model: {model}")
+
+            return response.choices[0].message.content
+    
+        except httpx.HTTPError as e:
+            # 处理HTTP请求异常
+            error_message = f"HTTP请求错误: {str(e)}"
+            print(error_message)
+            return error_message
+        except Exception as e:
+            # 处理其他异常
+            error_message = f"生成AI响应时出错: {str(e)}"
+            print(error_message)
+            return error_message
+    
+    
+    # 生成假的数据
     def _generate_mock_response(self, user_message: str, model: str) -> str:
         """生成模拟AI响应用于演示"""
         import random

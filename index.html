@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeMirror 项目管理器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/dracula.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .container {
+            display: flex;
+            width: 100%;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        .file-tree {
+            margin-bottom: 20px;
+        }
+        .file-tree div {
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .file-tree .folder::before {
+            content: "📁 ";
+        }
+        .file-tree .file::before {
+            content: "📄 ";
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #34495e;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #1abc9c;
+        }
+        .editor {
+            flex-grow: 1;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .CodeMirror {
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="file-tree" id="fileTree"></div>
+            <button id="newFileBtn">新建文件</button>
+            <button id="newFolderBtn">新建文件夹</button>
+            <button id="saveProjectBtn">保存项目</button>
+        </div>
+        <div class="editor">
+            <textarea id="codeEditor"></textarea>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/selection/active-line.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const fileTree = document.getElementById('fileTree');
+            const newFileBtn = document.getElementById('newFileBtn');
+            const newFolderBtn = document.getElementById('newFolderBtn');
+            const saveProjectBtn = document.getElementById('saveProjectBtn');
+            const codeEditor = document.getElementById('codeEditor');
+
+            let currentFile = null;
+            let fileSystem = {};
+
+            const editor = CodeMirror.fromTextArea(codeEditor, {
+                mode: 'javascript',
+                theme: 'dracula',
+                lineNumbers: true,
+                matchBrackets: true,
+                styleActiveLine: true
+            });
+
+            function renderFileTree() {
+                fileTree.innerHTML = '';
+                Object.keys(fileSystem).forEach(fileName => {
+                    const file = fileSystem[fileName];
+                    const fileElement = document.createElement('div');
+                    fileElement.textContent = fileName;
+                    fileElement.classList.add(file.type);
+                    fileElement.addEventListener('click', () => openFile(fileName));
+                    fileTree.appendChild(fileElement);
+                });
+            }
+
+            function openFile(fileName) {
+                currentFile = fileName;
+                editor.setValue(fileSystem[fileName].content);
+            }
+
+            function saveFile() {
+                if (currentFile) {
+                    fileSystem[currentFile].content = editor.getValue();
+                }
+            }
+
+            function saveProject() {
+                const projectData = JSON.stringify(fileSystem);
+                const blob = new Blob([projectData], { type: 'application/json' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'project.json';
+                link.click();
+            }
+
+            newFileBtn.addEventListener('click', () => {
+                const fileName = prompt('请输入文件名');
+                if (fileName) {
+                    fileSystem[fileName] = { type: 'file', content: '' };
+                    renderFileTree();
+                }
+            });
+
+            newFolderBtn.addEventListener('click', () => {
+                const folderName = prompt('请输入文件夹名');
+                if (folderName) {
+                    fileSystem[folderName] = { type: 'folder', content: null };
+                    renderFileTree();
+                }
+            });
+
+            saveProjectBtn.addEventListener('click', saveProject);
+
+            renderFileTree();
+        });
+    </script>
+</body>
+</html>

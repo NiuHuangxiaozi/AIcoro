@@ -38,14 +38,17 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = response.user
       
       // 保存到本地存储
+      // assess_token指的是前端以后可以通过这个访问后端的所有接口
+      // user_info就是用户名字，用户的id等等信息
+      // 都保存在前端的全局变量库里面
       localStorage.setItem('access_token', response.access_token)
       localStorage.setItem('user_info', JSON.stringify(response.user))
       
       return response
     } catch (error) {
-      throw error
+        throw error
     } finally {
-      loading.value = false
+        loading.value = false
     }
   }
 
