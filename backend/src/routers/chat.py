@@ -4,6 +4,7 @@ from typing import List
 import os
 import time
 import json
+import shutil
 from openai import OpenAI
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse
@@ -381,7 +382,7 @@ async def get_sessions(current_user: User = Depends(get_current_user)):
             updated_at=session.updated_at,
             message_count=len(session.messages)
         ))
-    
+
     return sessions
 
 
@@ -413,7 +414,6 @@ async def delete_session(
 ):
     """删除会话"""
     db = get_database()
-     
     result = await db.sessions.delete_one({"id": session_id, "user_id": current_user.id})
     if result.deleted_count == 0:
         raise HTTPException(
@@ -421,6 +421,18 @@ async def delete_session(
             detail="会话不存在"
         )
     
+    # 删除对应的本地文件夹（因为可能有code相关的对话）
+    for item in os.listdir(settings.base_code_dir):
+        item_path = os.path.join(settings.base_code_dir, item)
+        # 检查是否是目录且名称中包含 session_id
+        if os.path.isdir(item_path) and f'{session_id}' in item:
+            try:
+                # 删除该目录及其所有内容
+                shutil.rmtree(item_path)
+                print(f"已删除目录：{item_path}")
+            except Exception as e:
+                print(f"删除目录 {item_path} 时发生错误：{e}")
+                
     return {"message": "会话删除成功"}
 
 
@@ -437,5 +449,9 @@ async def delete_all_sessions(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="会话不存在"
         )
-    
+    try:
+        shutil.rmtree(settings.base_code_dir)
+        print(f"目录 '{settings.base_code_dir}' 及其所有内容已成功删除。")
+    except Exception as e:
+        print(f"删除目录 '{settings.base_code_dir}' 时发生错误：{e}")
     return {"message": "所有会话删除成功"}

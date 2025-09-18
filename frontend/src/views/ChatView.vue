@@ -4,6 +4,10 @@
     <div class="sidebar">
       <div class="sidebar-header">
         <h2>对话历史</h2>
+
+        <button class="btn btn-primary new-chat-btn" @click="deleteAllChat">
+          删除所有对话
+        </button>
         <button class="btn btn-primary new-chat-btn" @click="createNewChat">
           新对话
         </button>
@@ -202,6 +206,10 @@ const createNewChat = () => {
   scrollToBottom()
 }
 
+const deleteAllChat = () => {
+  chatStore.deleteAllChat()
+}
+
 const selectSession = async (session) => {
   try {
     await chatStore.selectSession(session)
@@ -385,7 +393,7 @@ onUnmounted(() => {
 
 .new-chat-btn {
   padding: 8px 16px;
-  font-size: 14px;
+  font-size: 10px;
 }
 
 .sessions-list {

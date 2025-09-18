@@ -13,6 +13,8 @@ export const useChatStore = defineStore('chat', () => {
   const messages = ref([])
   const loading = ref(false)
   const sending = ref(false)
+
+
   // 计算属性
   const currentSessionId = computed(() => currentSession.value?.id || null)
 
@@ -57,7 +59,7 @@ export const useChatStore = defineStore('chat', () => {
   const fetchAIResponse = (content, model, mode, controller, response_session_id) => { 
     const apiUrl = 'http://localhost:8000/chat/sendstream'; // 替换为实际的 AI API 地址 
     const token = localStorage.getItem('access_token')
-
+    console.log("fetchAIResponse is called")
     fetchEventSource(apiUrl, { 
       method: 'POST', 
       headers: { 
@@ -71,8 +73,9 @@ export const useChatStore = defineStore('chat', () => {
         model,
         
       }), 
-      onopen: (response) => { 
-        if (response.ok)  { 
+      openWhenHidden: true,
+      onopen: (response) => {
+        if (response.ok)  {
           console.log('SSE  连接已建立'); 
         } else { 
           console.error('SSE  连接失败', response.status);  
@@ -98,6 +101,7 @@ export const useChatStore = defineStore('chat', () => {
         }
       }, 
       onclose: () => { 
+        sending.value = false
         console.log('SSE  连接已关闭'); 
       }, 
       onerror: (error) => { 
@@ -124,6 +128,7 @@ export const useChatStore = defineStore('chat', () => {
     mode = 'Ask'
   ) => {
 
+    console.log("streamGetMessage is called")
     const userMessage = {
       id: Date.now().toString(),
       content,
@@ -146,7 +151,10 @@ export const useChatStore = defineStore('chat', () => {
     try{  
       // 创建一个 AbortController，可以用于在接收到空 data 时关闭连接（或外部手动关闭）
       const controller = new AbortController();
+      console.log("before fetchAIResponse is called")
       const result = fetchAIResponse(content, model, mode, controller, response_session_id)
+
+      console.log("after fetchAIResponse is called , update sending.value to false update session")
       // 更新当前会话ID
       if (!currentSession.value) {
         // 如果是新会话，重新获取会话列表
@@ -164,6 +172,7 @@ export const useChatStore = defineStore('chat', () => {
     }
     finally {
       sending.value = false
+      console.log("finally sending.value is ", sending.value)
     }
 
   }
@@ -260,7 +269,7 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  // 创建新会话
+  // 创建新会话,当前会话是null，加入第一条信息
   const createNewSession = () => {
     currentSession.value = null
     messages.value = [
@@ -301,6 +310,22 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+
+  // 删除所有的对话
+  const deleteAllChat = async () => {
+    try {
+        await chatAPI.deleteAllSessions()
+        
+        sessions.value = []
+        messages.value = []
+        createNewSession()
+
+    }catch(error) {
+      console.error('删除所有对话失败:', error)
+      throw error
+    }
+  }
+
   // 初始化聊天数据
   const initChat = async () => {
     await fetchSessions()
@@ -322,6 +347,7 @@ export const useChatStore = defineStore('chat', () => {
     createNewSession,
     selectSession,
     deleteSession,
+    deleteAllChat,
     initChat,
     
     // 消息发送方法

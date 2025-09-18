@@ -45,6 +45,6 @@ class Settings(BaseModel):
 
     
     # code agent configs
-    base_code_dir :str = "/home/niu/code/AIcoro/backend/src/ai_code_agent"
+    base_code_dir : str = "/home/niu/code/AIcoro/generation_codes"
 
 settings = Settings()
