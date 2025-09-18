@@ -32,7 +32,7 @@ class Settings(BaseModel):
     
     
     # CORS配置
-    cors_origins: list = ["http://localhost:5173", "http://localhost:3000"]
+    cors_origins: list = ["*"]
     
     def __init__(self):
         super().__init__()

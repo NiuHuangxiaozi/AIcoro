@@ -77,6 +77,7 @@ class ChatService:
     def _code_agent_llm_generate_response(self,
                                           messages: List[Message],
                                           model: str = "deepseek-reasoner",
+                                          stream_callback = None,
                                           **kwargs):
         '''
             自己写代码的ai agent, 算法： ReAct
@@ -100,7 +101,48 @@ class ChatService:
         messages[-1].content += f"你是一个经验丰富的程序员，请在指定的文件路径：{tar_dir} 进行代码编写 要求：\
             1.所有的操作都在上面的路径下进行，不能修改路径外的任何东西 2.代码简介规范有注释"
         
-        model_answer : str = get_code_agent_response(messages, tar_dir, model)
+        # 提取用户的最后一条消息作为任务
+        task = messages[-1].content
+        model_answer : str = get_code_agent_response(task, tar_dir, model, stream_callback)
+        
+        return model_answer
+
+    def _code_agent_llm_generate_streaming_response(self,
+                                                   messages: List[Message],
+                                                   model: str = "deepseek-reasoner",
+                                                   stream_callback = None,
+                                                   **kwargs):
+        '''
+            流式生成代码的ai agent, 算法： ReAct
+        '''
+        from .ai_code_agent.agent import get_code_agent_response
+        
+        # 检查模型
+        if model not in settings.supported_LLM:
+            if stream_callback:
+                stream_callback(f"❌ **错误**: 当前系统不支持模型 {model}!")
+            return f"Current system can not support model {model}!"
+        
+        # 检查文件路径
+        if "code_generation_root_dir" in kwargs:
+            tar_dir = kwargs["code_generation_root_dir"]
+        else:
+            error_msg = "代码生成路径未指定，无法继续执行"
+            if stream_callback:
+                stream_callback(f"❌ **错误**: {error_msg}")
+            return error_msg
+        
+        os.makedirs(tar_dir, exist_ok=True)
+        print(f"创建了独立代码目录！！！")
+        if stream_callback:
+            stream_callback(f"📁 **创建代码目录**: {os.path.basename(tar_dir)}")
+        
+        messages[-1].content += f"你是一个经验丰富的程序员，请在指定的文件路径：{tar_dir} 进行代码编写 要求：\
+            1.所有的操作都在上面的路径下进行，不能修改路径外的任何东西 2.代码简介规范有注释"
+        
+        # 提取用户的最后一条消息作为任务
+        task = messages[-1].content
+        model_answer : str = get_code_agent_response(task, tar_dir, model, stream_callback)
         
         return model_answer
 

@@ -1,0 +1,1 @@
+print("qwe")  # Print the string "qwe"

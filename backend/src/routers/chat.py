@@ -160,12 +160,24 @@ async def send_stream(
         )
     
     
+    # 根据模式选择不同的流式处理方式
+    if chat_request.mode == "Agent":
+        print(f"Agent mode")
+        # Agent模式：使用代码生成agent
+        return await _handle_agent_streaming(chat_request, session, session_id, current_user, db)
+    else:
+        print(f"Ask mode")
+        # Ask模式：使用标准聊天流式处理
+        return await _handle_ask_streaming(chat_request, session, session_id, db)
+
+
+async def _handle_ask_streaming(chat_request: ChatRequest, session: Session, session_id: str, db):
+    """处理Ask模式的流式响应"""
     #  会话里面添加message，然后不断地往里面填充
     ai_message = Message(
             content="",
             role="assistant",
         )
-    
     
     # 将后端message格式转化为模型需要的格式
     formatted_messages = []
@@ -206,6 +218,139 @@ async def send_stream(
                 ai_message.content += str_tokens
                 yield f"event: message\ndata: {json.dumps({'delta': str_tokens})}\n\n"
             await asyncio.sleep(0.01)  # 模拟延迟
+
+    return StreamingResponse(generate_data(), media_type="text/event-stream",headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # 禁用Nginx缓冲
+        })
+
+
+async def _handle_agent_streaming(chat_request: ChatRequest, session: Session, session_id: str, current_user: User, db):
+    """处理Agent模式的流式响应"""
+    print(f"in _handle_agent_streaming")
+    # 创建代码生成目录
+    code_generation_root_dir = settings.base_code_dir + \
+            '/' + '_'.join([str(session.id)+'/', str(session.user_id),"dir",  str(time.time())])
+    
+    # 准备AI消息容器
+    ai_message = CodeMessage(
+        content="",
+        role="assistant",
+        root_path=code_generation_root_dir
+    )
+    
+    # 创建队列用于在线程间传递流式消息
+    import queue
+    message_queue = queue.Queue()
+    
+    
+    # 启动代码生成任务
+    import threading
+    
+    
+    generation_complete = threading.Event()
+    final_answer = None
+    error_occurred = None
+    def run_agent():
+            nonlocal final_answer, error_occurred
+            try:
+                final_answer = chat_service._code_agent_llm_generate_streaming_response(
+                    messages=session.messages,
+                    model=chat_request.model,
+                    stream_callback=stream_callback,
+                    code_generation_root_dir=code_generation_root_dir
+                )
+            except Exception as e:
+                error_occurred = str(e)
+            finally:
+                print(f"generation_complete.set()")
+                generation_complete.set()
+    # 创建流式回调函数
+    def stream_callback(message: str):
+            print(f"stream_callback from chat router: {message}")
+            # 将消息放入队列
+            message_queue.put(message)
+            # 同时添加到AI回复中
+            ai_message.content += message + "\n\n"
+        
+    print(f"before agent_thread start")
+    agent_thread = threading.Thread(target=run_agent,name=f"agent_thread")
+    agent_thread.daemon = True
+    agent_thread.start()
+    print(f'threading.enumerate() is {threading.enumerate()}')
+    
+    async def generate_data():
+        yield f"event: message\ndata: {json.dumps({'delta': '##[BEGIN]##','session_id': session_id})}\n\n"
+        
+        # # 创建流式回调函数
+        # def stream_callback(message: str):
+        #     print(f"stream_callback from chat router: {message}")
+        #     # 将消息放入队列
+        #     message_queue.put(message)
+        #     # 同时添加到AI回复中
+        #     ai_message.content += message + "\n\n"
+        
+        # 启动代码生成任务
+        # import threading
+        # generation_complete = threading.Event()
+        # final_answer = None
+        # error_occurred = None
+        
+        # def run_agent():
+        #     nonlocal final_answer, error_occurred
+        #     try:
+        #         final_answer = chat_service._code_agent_llm_generate_streaming_response(
+        #             messages=session.messages,
+        #             model=chat_request.model,
+        #             stream_callback=stream_callback,
+        #             code_generation_root_dir=code_generation_root_dir
+        #         )
+        #     except Exception as e:
+        #         error_occurred = str(e)
+        #     finally:
+        #         generation_complete.set()
+        
+        # # 在后台线程中运行agent
+        # agent_thread = threading.Thread(target=run_agent)
+        # agent_thread.daemon = True
+        # agent_thread.start()
+        # print(f'threading.enumerate() is {threading.enumerate()}')
+        
+        # 持续读取队列中的消息并发送
+        while not generation_complete.is_set() or not message_queue.empty():
+            try:
+                # 尝试从队列获取消息，设置超时避免阻塞
+                message = message_queue.get(timeout=0.1)
+                yield f"event: message\ndata: {json.dumps({'delta': message})}\n\n"
+                await asyncio.sleep(0.01)  # 小延迟确保流式体验
+            except queue.Empty:
+                # 队列为空，继续等待
+                await asyncio.sleep(0.1)
+
+        # 处理最终结果或错误
+        if error_occurred:
+            error_msg = f"❌ **代码生成过程中发生错误**: {error_occurred}"
+            ai_message.content += error_msg
+            yield f"event: message\ndata: {json.dumps({'delta': error_msg})}\n\n"
+        elif final_answer:
+            final_msg = f"\n\n**最终结果**: {final_answer}"
+            ai_message.content += final_msg
+            yield f"event: message\ndata: {json.dumps({'delta': final_msg})}\n\n"
+        
+        # 保存会话
+        try:
+            session.messages.append(ai_message)
+            session.updated_at = datetime.utcnow()
+            
+            await db.sessions.replace_one(
+                {"id": session_id},
+                session.dict()
+            )
+        except Exception as e:
+            print(f"保存会话时出错: {e}")
+        
+        yield f"event: message\ndata: {json.dumps({'delta': '##[DONE]##'})}\n\n"
 
     return StreamingResponse(generate_data(), media_type="text/event-stream",headers={
             "Cache-Control": "no-cache",
@@ -277,3 +422,20 @@ async def delete_session(
         )
     
     return {"message": "会话删除成功"}
+
+
+
+@router.delete("/sessions")
+async def delete_all_sessions(
+    current_user: User = Depends(get_current_user)
+):
+    """删除所有会话"""
+    db = get_database()
+    result = await db.sessions.delete_many({"user_id": current_user.id})
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="会话不存在"
+        )
+    
+    return {"message": "所有会话删除成功"}
