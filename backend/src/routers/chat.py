@@ -17,7 +17,6 @@ from ..models import (
     SessionResponse, 
     Session, 
     Message, 
-    CodeMessage,
     User
 )
 from ..auth import get_current_user
@@ -235,10 +234,10 @@ async def _handle_agent_streaming(chat_request: ChatRequest, session: Session, s
             '/' + '_'.join([str(session.id)+'/', str(session.user_id),"dir",  str(time.time())])
     
     # 准备AI消息容器
-    ai_message = CodeMessage(
+    ai_message = Message(
         content="",
         role="assistant",
-        root_path=code_generation_root_dir
+        code_root_path=code_generation_root_dir
     )
     
     # 创建队列用于在线程间传递流式消息
@@ -284,40 +283,6 @@ async def _handle_agent_streaming(chat_request: ChatRequest, session: Session, s
     async def generate_data():
         yield f"event: message\ndata: {json.dumps({'delta': '##[BEGIN]##','session_id': session_id})}\n\n"
         
-        # # 创建流式回调函数
-        # def stream_callback(message: str):
-        #     print(f"stream_callback from chat router: {message}")
-        #     # 将消息放入队列
-        #     message_queue.put(message)
-        #     # 同时添加到AI回复中
-        #     ai_message.content += message + "\n\n"
-        
-        # 启动代码生成任务
-        # import threading
-        # generation_complete = threading.Event()
-        # final_answer = None
-        # error_occurred = None
-        
-        # def run_agent():
-        #     nonlocal final_answer, error_occurred
-        #     try:
-        #         final_answer = chat_service._code_agent_llm_generate_streaming_response(
-        #             messages=session.messages,
-        #             model=chat_request.model,
-        #             stream_callback=stream_callback,
-        #             code_generation_root_dir=code_generation_root_dir
-        #         )
-        #     except Exception as e:
-        #         error_occurred = str(e)
-        #     finally:
-        #         generation_complete.set()
-        
-        # # 在后台线程中运行agent
-        # agent_thread = threading.Thread(target=run_agent)
-        # agent_thread.daemon = True
-        # agent_thread.start()
-        # print(f'threading.enumerate() is {threading.enumerate()}')
-        
         # 持续读取队列中的消息并发送
         while not generation_complete.is_set() or not message_queue.empty():
             try:
@@ -351,7 +316,7 @@ async def _handle_agent_streaming(chat_request: ChatRequest, session: Session, s
         except Exception as e:
             print(f"保存会话时出错: {e}")
         
-        yield f"event: message\ndata: {json.dumps({'delta': '##[DONE]##'})}\n\n"
+        yield f"event: message\ndata: {json.dumps({'delta': '##[DONE]##', 'code_root_path': code_generation_root_dir})}\n\n"
 
     return StreamingResponse(generate_data(), media_type="text/event-stream",headers={
             "Cache-Control": "no-cache",
