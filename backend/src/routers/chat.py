@@ -26,7 +26,16 @@ router = APIRouter(prefix="/chat", tags=["聊天"])
 
 
 
+'''
 
+class ChatRequest(BaseModel):
+    """聊天请求"""
+    message: str
+    session_id: Optional[str] = None
+    model: str = "deepseek-chat"
+    mode: str = "Ask"
+    
+'''
 @router.post("/send", response_model=ChatResponse)
 async def send_message(
     chat_request: ChatRequest,
@@ -87,6 +96,7 @@ async def send_message(
             role="assistant",
             root_path=code_generation_root_dir
         )
+        # ask mode
     else:
         ai_message = Message(
             content=ai_response_content or "AI暂无响应",
@@ -300,7 +310,7 @@ async def _handle_agent_streaming(chat_request: ChatRequest, session: Session, s
             ai_message.content += error_msg
             yield f"event: message\ndata: {json.dumps({'delta': error_msg})}\n\n"
         elif final_answer:
-            final_msg = f"\n\n**最终结果**: {final_answer}"
+            final_msg = f"\n\n**最终结果已经生成，请点击查看代码按钮查看代码**"
             ai_message.content += final_msg
             yield f"event: message\ndata: {json.dumps({'delta': final_msg})}\n\n"
         

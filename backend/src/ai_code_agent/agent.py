@@ -82,14 +82,13 @@ class ReActAgent:
                 # group 是一个捕获组，group就是获取第一个左括号对应的内容
                 thought = thought_match.group(1)
                 # 将模型的思考加入上下文
-                print(f"\n\n💭 Thought: {thought}")
                 # 流式发送思考过程
-                self._send_stream_message(f"💭 **思考中**: {thought.strip()}")
+                self._send_stream_message(f"💭[思考中]: {thought.strip()}\n")
 
             # 检测模型是否输出 Final Answer，如果是的话，直接返回
             if "<final_answer>" in content:
                 final_answer = re.search(r"<final_answer>(.*?)</final_answer>", content, re.DOTALL)
-                self._send_stream_message("✅ **代码生成完毕**！您可以查看生成的代码。")
+                self._send_stream_message("✅ 代码生成完毕！您可以查看生成的代码。")
                 return final_answer.group(1)
 
             
@@ -108,18 +107,18 @@ class ReActAgent:
             if tool_name == "_write_to_file":
                 file_path = args[0] if args else "未知文件"
                 filename = os.path.basename(file_path)
-                self._send_stream_message(f"📝 **正在创建文件**: {filename}")
+                self._send_stream_message(f"📝[正在创建文件]: {filename}\n")
             elif tool_name == "_read_file":
                 file_path = args[0] if args else "未知文件"
                 filename = os.path.basename(file_path)
-                self._send_stream_message(f"📖 **正在读取文件**: {filename}")
+                self._send_stream_message(f"📖[正在读取文件]: {filename}\n")
             elif tool_name == "_run_terminal_command":
                 command = args[0] if args else "未知命令"
-                self._send_stream_message(f"⚡ **正在执行命令**: {command}")
+                self._send_stream_message(f"⚡[正在执行命令]: {command}\n")
             elif tool_name == "_delete_file":
                 file_path = args[0] if args else "未知文件"
                 filename = os.path.basename(file_path)
-                self._send_stream_message(f"🗑️ **正在删除文件**: {filename}")
+                self._send_stream_message(f"🗑️[正在删除文件]: {filename}\n")
             
             # 只有终端命令才需要询问用户，其他的工具直接执行
             # 重要的改变环境的命令用户确定
@@ -139,17 +138,17 @@ class ReActAgent:
                 if tool_name == "_write_to_file" and "写入成功" in observation:
                     file_path = args[0] if args else "未知文件"
                     filename = os.path.basename(file_path)
-                    self._send_stream_message(f"✅ **文件创建成功**: {filename}")
+                    self._send_stream_message(f"✅ **文件创建成功**: {filename}\n")
                 elif tool_name == "_run_terminal_command" and "执行成功" in observation:
-                    self._send_stream_message("✅ **命令执行成功**")
+                    self._send_stream_message("✅ **命令执行成功**\n")
                 elif tool_name == "_delete_file" and "成功删除" in observation:
                     file_path = args[0] if args else "未知文件"
                     filename = os.path.basename(file_path)
-                    self._send_stream_message(f"✅ **文件删除成功**: {filename}")
+                    self._send_stream_message(f"✅ **文件删除成功**: {filename}\n")
                     
             except Exception as e:
                 observation = f"工具执行错误：{str(e)}"
-                self._send_stream_message(f"❌ **执行出错**: {str(e)}")
+                self._send_stream_message(f"❌ **执行出错**: {str(e)}\n")
             
             # 将用户的观察继续加入到消息队列里面
             print(f"\n\n🔍 Observation：{observation}")
