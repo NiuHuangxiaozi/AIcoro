@@ -13,6 +13,8 @@ export const useChatStore = defineStore('chat', () => {
   const messages = ref([])
   const loading = ref(false)
   const sending = ref(false)
+
+
   // 计算属性
   const currentSessionId = computed(() => currentSession.value?.id || null)
 
@@ -57,7 +59,7 @@ export const useChatStore = defineStore('chat', () => {
   const fetchAIResponse = (content, model, mode, controller, response_session_id) => { 
     const apiUrl = 'http://localhost:8000/chat/sendstream'; // 替换为实际的 AI API 地址 
     const token = localStorage.getItem('access_token')
-
+    console.log("fetchAIResponse is called")
     fetchEventSource(apiUrl, { 
       method: 'POST', 
       headers: { 
@@ -71,8 +73,9 @@ export const useChatStore = defineStore('chat', () => {
         model,
         
       }), 
-      onopen: (response) => { 
-        if (response.ok)  { 
+      openWhenHidden: true,
+      onopen: (response) => {
+        if (response.ok)  {
           console.log('SSE  连接已建立'); 
         } else { 
           console.error('SSE  连接失败', response.status);  
@@ -90,6 +93,12 @@ export const useChatStore = defineStore('chat', () => {
         }
         else if(data.delta === '##[DONE]##'){
           console.log('收到结束标记，主动关闭 SSE 连接');
+
+          // 查看是否有code_root_path,如果有那我需要显示查看代码按钮
+          if(data.code_root_path){
+            console.log("data.code_root_path is ",data.code_root_path)
+            messages.value[messages.value.length - 1].code_root_path = data.code_root_path
+          }
           controller.abort(); // 中止请求
           return;
         }
@@ -98,6 +107,7 @@ export const useChatStore = defineStore('chat', () => {
         }
       }, 
       onclose: () => { 
+        sending.value = false
         console.log('SSE  连接已关闭'); 
       }, 
       onerror: (error) => { 
@@ -124,6 +134,7 @@ export const useChatStore = defineStore('chat', () => {
     mode = 'Ask'
   ) => {
 
+    console.log("streamGetMessage is called")
     const userMessage = {
       id: Date.now().toString(),
       content,
@@ -136,7 +147,8 @@ export const useChatStore = defineStore('chat', () => {
       id: Date.now().toString(),
       content: '',
       role: 'assistant',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      code_root_path: ''
     }
     messages.value.push(aiMessage)
 
@@ -147,6 +159,7 @@ export const useChatStore = defineStore('chat', () => {
       // 创建一个 AbortController，可以用于在接收到空 data 时关闭连接（或外部手动关闭）
       const controller = new AbortController();
       const result = fetchAIResponse(content, model, mode, controller, response_session_id)
+
       // 更新当前会话ID
       if (!currentSession.value) {
         // 如果是新会话，重新获取会话列表
@@ -164,6 +177,7 @@ export const useChatStore = defineStore('chat', () => {
     }
     finally {
       sending.value = false
+      console.log("finally sending.value is ", sending.value)
     }
 
   }
@@ -260,7 +274,7 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  // 创建新会话
+  // 创建新会话,当前会话是null，加入第一条信息
   const createNewSession = () => {
     currentSession.value = null
     messages.value = [
@@ -301,10 +315,31 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+
+  // 删除所有的对话
+  const deleteAllChat = async () => {
+    try {
+        await chatAPI.deleteAllSessions()
+        
+        sessions.value = []
+        messages.value = []
+        createNewSession()
+
+    }catch(error) {
+      console.error('删除所有对话失败:', error)
+      throw error
+    }
+  }
+
   // 初始化聊天数据
   const initChat = async () => {
     await fetchSessions()
-    createNewSession()
+    if(!currentSession.value){
+      createNewSession() 
+    }
+    else{
+      selectSession(currentSession.value)
+    }
   }
 
   return {
@@ -322,6 +357,7 @@ export const useChatStore = defineStore('chat', () => {
     createNewSession,
     selectSession,
     deleteSession,
+    deleteAllChat,
     initChat,
     
     // 消息发送方法

@@ -51,3 +51,13 @@ async def root():
 async def health_check():
     """健康检查"""
     return {"status": "healthy"}
+
+
+if __name__ == "__main__":
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info"
+    )

@@ -19,7 +19,8 @@ class ReActAgent:
     def __init__(self, 
                  tools: List[Callable],
                  model: str,
-                 project_directory: str):
+                 project_directory: str,
+                 stream_callback: Callable[[str], None] = None):
         self.tools = { func.__name__: func for func in tools }
         
         # 获得model的所有信息
@@ -35,12 +36,19 @@ class ReActAgent:
         # 代码的工作目录
         self.project_directory = project_directory
         
+        # 流式回调函数
+        self.stream_callback = stream_callback
         
         self.client = OpenAI(
             base_url=self.model_base_url,
             api_key=self.model_api_key,
         )
         
+
+    def _send_stream_message(self, message: str):
+        """发送流式消息的辅助方法"""
+        if self.stream_callback:
+            self.stream_callback(message)
 
     def run(self, user_input: str):
         
@@ -55,6 +63,9 @@ class ReActAgent:
                 "content": f"<question>{user_input}</question>"
             }
         ]
+
+        # 发送开始消息
+        self._send_stream_message("🚀 ...")
 
         while True:
 
@@ -71,11 +82,13 @@ class ReActAgent:
                 # group 是一个捕获组，group就是获取第一个左括号对应的内容
                 thought = thought_match.group(1)
                 # 将模型的思考加入上下文
-                print(f"\n\n💭 Thought: {thought}")
+                # 流式发送思考过程
+                self._send_stream_message(f"💭[思考中]: {thought.strip()}\n")
 
             # 检测模型是否输出 Final Answer，如果是的话，直接返回
             if "<final_answer>" in content:
                 final_answer = re.search(r"<final_answer>(.*?)</final_answer>", content, re.DOTALL)
+                self._send_stream_message("✅ 代码生成完毕！您可以查看生成的代码。")
                 return final_answer.group(1)
 
             
@@ -90,6 +103,22 @@ class ReActAgent:
 
             print(f"\n\n🔧 Action: {tool_name}({', '.join(args)})")
             
+            # 流式发送行动信息
+            if tool_name == "_write_to_file":
+                file_path = args[0] if args else "未知文件"
+                filename = os.path.basename(file_path)
+                self._send_stream_message(f"📝[正在创建文件]: {filename}\n")
+            elif tool_name == "_read_file":
+                file_path = args[0] if args else "未知文件"
+                filename = os.path.basename(file_path)
+                self._send_stream_message(f"📖[正在读取文件]: {filename}\n")
+            elif tool_name == "_run_terminal_command":
+                command = args[0] if args else "未知命令"
+                self._send_stream_message(f"⚡[正在执行命令]: {command}\n")
+            elif tool_name == "_delete_file":
+                file_path = args[0] if args else "未知文件"
+                filename = os.path.basename(file_path)
+                self._send_stream_message(f"🗑️[正在删除文件]: {filename}\n")
             
             # 只有终端命令才需要询问用户，其他的工具直接执行
             # 重要的改变环境的命令用户确定
@@ -97,14 +126,29 @@ class ReActAgent:
             should_continue = 'y'
             if should_continue.lower() != 'y':
                 print("\n\n操作已取消。")
+                self._send_stream_message("❌ **操作被用户取消**")
                 return "操作被用户取消"
 
             
             try:
                 # 执行函数并且得到返回值，也就是环境的观察值
                 observation = self.tools[tool_name](*args)
+                
+                # 流式发送执行结果
+                if tool_name == "_write_to_file" and "写入成功" in observation:
+                    file_path = args[0] if args else "未知文件"
+                    filename = os.path.basename(file_path)
+                    self._send_stream_message(f"✅ **文件创建成功**: {filename}\n")
+                elif tool_name == "_run_terminal_command" and "执行成功" in observation:
+                    self._send_stream_message("✅ **命令执行成功**\n")
+                elif tool_name == "_delete_file" and "成功删除" in observation:
+                    file_path = args[0] if args else "未知文件"
+                    filename = os.path.basename(file_path)
+                    self._send_stream_message(f"✅ **文件删除成功**: {filename}\n")
+                    
             except Exception as e:
                 observation = f"工具执行错误：{str(e)}"
+                self._send_stream_message(f"❌ **执行出错**: {str(e)}\n")
             
             # 将用户的观察继续加入到消息队列里面
             print(f"\n\n🔍 Observation：{observation}")
@@ -311,11 +355,13 @@ def _delete_file(file_path):
 def get_code_agent_response(
                             task,
                             project_directory,
-                            model):
+                            model,
+                            stream_callback: Callable[[str], None] = None):
     '''
         task: 用户想要作者实现什么代码
         project_directory：为每一个用户实现单独的代码空间，所以就用userid-sessionid-root来指代
         model： 就是调用模型的名称
+        stream_callback: 流式输出回调函数
     '''
     
     
@@ -328,7 +374,8 @@ def get_code_agent_response(
     # 创建一个agent，我们使用deepseek
     agent = ReActAgent(tools=tools,
                        model=model,
-                       project_directory=project_dir)
+                       project_directory=project_dir,
+                       stream_callback=stream_callback)
 
     final_answer = agent.run(task)
 

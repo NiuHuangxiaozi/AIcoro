@@ -54,3 +54,23 @@ SQLAlchemy 2.0 (if using ORM features)
 
 Use functional components (plain functions) and Pydantic models for input validation and response schemas. Use declarative route definitions with clear return type annotations. Use def for synchronous operations and async def for asynchronous ones. Minimize @app.on_event("startup") and @app.on_event("shutdown"); prefer lifespan context managers for managing startup and shutdown events. Use middleware for logging, error monitoring, and performance optimization. Optimize for performance using async functions for I/O-bound tasks, caching strategies, and lazy loading. Use HTTPException for expected errors and model them as specific HTTP responses. Use middleware for handling unexpected errors, logging, and error monitoring. Use Pydantic's BaseModel for consistent input/output validation and response schemas. Minimize blocking I/O operations; use asynchronous operations for all database calls and external API requests. Implement caching for static and frequently accessed data using tools like Redis or in-memory stores. Optimize data serialization and deserialization with Pydantic. Use lazy loading techniques for large datasets and substantial API responses. Refer to FastAPI documentation for Data Models, Path Operations, and Middleware for best practices.
 
+
+
+你是一个经验丰富的fastapi，vue3开发者，请你修改后端完成下面的任务：
+
+项目重要代码介绍：
+1.后端backend/src/ai_code_agent里面使用reAct实现了一个最简单的ai code agent，目前他是非流式的，就是它会在后端某一个目录下面生成对应的代码，最后给用户前端
+返回生成完毕。
+2. 前端的 chat.js 里面streamGetMessage和fetchAIResponse里面实现了接受后端的流式调用，后端@router.post("/sendstream")async def send_stream，接受这个请求进行流式回答，这个目前在model
+是deepseek-chat，mode是Ask的情况下实现
+
+3. 前端还提供了选项，可以选择deepseek-reasoner和AI Agent模式， 目前实现了非流式的code生成，在最后前端对话框有一个按钮，点击按钮到一个可以到
+代码界面看代码。
+
+完成任务：
+1、核心任务：实现代码生成的流式传输，提高用户体验感，即：在agent工作的过程中，如果是思考过程，如果是生成代码，那么就在指定文件夹下生成，然后给用户流式返回
+已经生成了什么代码；如果是创建了文件，那么就流式返回已经创建了mian.py等等；如果是代码项目生成完毕，那么最后要给用户流式返回生成完毕
+
+要求：
+1、不能修改已有的任何功能，只能添加功能；
+2、给出修改的解释。

@@ -32,7 +32,7 @@ class Settings(BaseModel):
     
     
     # CORS配置
-    cors_origins: list = ["http://localhost:5173", "http://localhost:3000"]
+    cors_origins: list = ["*"]
     
     def __init__(self):
         super().__init__()
@@ -45,6 +45,6 @@ class Settings(BaseModel):
 
     
     # code agent configs
-    base_code_dir :str = "/home/niu/code/AIcoro/backend/src/ai_code_agent"
+    base_code_dir : str = "/home/niu/code/AIcoro/generation_codes"
 
 settings = Settings()

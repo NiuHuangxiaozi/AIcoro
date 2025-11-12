@@ -4,6 +4,10 @@
     <div class="sidebar">
       <div class="sidebar-header">
         <h2>对话历史</h2>
+
+        <button class="btn btn-primary new-chat-btn" @click="deleteAllChat">
+          删除所有对话
+        </button>
         <button class="btn btn-primary new-chat-btn" @click="createNewChat">
           新对话
         </button>
@@ -74,13 +78,13 @@
             
             <!-- 这里就是每一条消息的展示，显示内容和时间戳 -->
             <div class="message-content">
-              <div class="message-text">{{ message.content }}</div>
+              <div class="message-text br-text">{{ message.content }}</div>
 
               <!-- 当存在root_path时显示查看代码按钮 -->
-              <div v-if="message.root_path" class="message-actions">
+              <div v-if="message.code_root_path" class="message-actions">
                 <button 
                   class="view-code-btn"
-                  @click="handleViewCode(message.root_path)"
+                  @click="handleViewCode(message.code_root_path)"
                 >
                   查看代码
                 </button>
@@ -126,17 +130,15 @@
           
           <div class="action-container">
             <div class="input-actions">
-              <Select v-model="selectedModel" class="model-select">
-                <Option value="deepseek-chat" style="background-color: antiquewhite;">DeepSeek Chat</Option>
-                <Option value="deepseek-reasoner" style="background-color: antiquewhite;">DeepSeek Reasoner</Option>
+              <Select v-model="selectedModel" @on-change="handleModelChange" placeholder="选择模型" class="model-select">
+                <Option v-for="item in model_type_list" :key="item.value" :value="item.value" style="background-color: #69adf5;  border-radius: 4px; color: black; font-weight: bold;">{{ item.label }}</Option>
               </Select>
-              
-              <Select v-model="selectedMode" class="mode-select">
-                  <Option value="Ask" style="background-color: lightgreen;">Ask</Option>
-                  <Option value="Agent" style="background-color: lightgreen;">Agent[⭐New⭐]</Option>
+
+              <Select v-model="selectedMode" @change="handleModeChange" placeholder="选择模式" class="mode-select">
+                <Option v-for="item in mode_type_list" :key="item.value" :value="item.value" style="background-color: palegreen;  border-radius: 4px; color: black; font-weight: bold;">{{ item.label }}</Option>
               </Select>
             </div>
-            <div>
+          <div>
 
               <button
                 class="btn btn-primary send-btn"
@@ -196,10 +198,44 @@ const currentSession = computed(() => chatStore.currentSession)
 const messages = computed(() => chatStore.messages)
 const sending = computed(() => chatStore.sending)
 
+
+const model_type_list = ref([{
+  value: 'deepseek-chat',
+  label: 'Chat'
+}, {
+  value: 'deepseek-reasoner',
+  label: 'Coder'
+}])
+
+const mode_type_list = ref([{
+  value: 'Ask',
+  label: 'Ask'
+}, {
+  value: 'Agent',
+  label: 'Agent'
+}])
+
+// 下面是我自己写的一些小函数
+
+// 处理模型选择变化
+
+// 实现，当点击deepseek-reasoner的时候，模式自动切换为Agent
+const handleModelChange = (value) => {
+  if (value === 'deepseek-reasoner') {
+    selectedMode.value = 'Agent'
+  } else if (value === 'deepseek-chat') {
+    selectedMode.value = 'Ask'
+  }
+}
+
 // 方法
 const createNewChat = () => {
   chatStore.createNewSession()
   scrollToBottom()
+}
+
+const deleteAllChat = () => {
+  chatStore.deleteAllChat()
 }
 
 const selectSession = async (session) => {
@@ -314,6 +350,8 @@ watch(messages, () => {
 // 组件挂载时初始化
 onMounted(async () => {
   try {
+
+    
     await chatStore.initChat()
     scrollToBottom()
     
@@ -385,7 +423,7 @@ onUnmounted(() => {
 
 .new-chat-btn {
   padding: 8px 16px;
-  font-size: 14px;
+  font-size: 10px;
 }
 
 .sessions-list {
@@ -633,29 +671,18 @@ onUnmounted(() => {
 .action-container {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 8px 0;
 }
+
 .input-actions {
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  gap: 15px;
+  gap: 100px;
 }
 
-.model-select {
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  border-color: #333;
-  font-size: 14px;
-  background: peru;
-}
-.mode-select {
-  padding: 10px;
-  border-radius: 6px;
-  border: solid #ddd;
-  font-size: 14px;
-  background-color: palegreen;
-}
 
 .send-btn {
   padding: 10px 24px;
@@ -726,6 +753,16 @@ onUnmounted(() => {
 
   .view-code-btn:hover {
     background-color: #0056b3;
+  }
+    .message-text.br-text {
+    white-space: pre-wrap;
+  }
+
+  .model-select {
+    min-width: 140px;
+    border-radius: 4px;
+    background-color: #69adf5;
+    color: red;
   }
 }
 </style>

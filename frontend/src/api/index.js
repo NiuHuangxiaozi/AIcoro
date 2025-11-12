@@ -71,7 +71,9 @@ export const chatAPI = {
   getSessionMessages: (sessionId) => api.get(`/chat/sessions/${sessionId}/messages`),
   
   // 删除会话
-  deleteSession: (sessionId) => api.delete(`/chat/sessions/${sessionId}`)
+  deleteSession: (sessionId) => api.delete(`/chat/sessions/${sessionId}`),
+
+  deleteAllSessions: () => api.delete('/chat/sessions')
 }
 
 // 代码管理API
