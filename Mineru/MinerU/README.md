@@ -1,0 +1,1 @@
+MINERU_MODEL_SOURCE=local mineru-api --host 0.0.0.0 --port 8000 --device cuda
