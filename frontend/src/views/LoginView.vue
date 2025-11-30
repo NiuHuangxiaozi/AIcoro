@@ -163,7 +163,7 @@ const handleSubmit = async () => {
     }
     
     // 登录/注册成功，跳转到聊天页面
-    router.push('/chat')
+    router.push('/home/open')
   } catch (error) {
     console.error('认证失败:', error)
     if (error.response?.data?.detail) {

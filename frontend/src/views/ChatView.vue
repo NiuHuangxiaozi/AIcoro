@@ -1,17 +1,19 @@
 <template>
-  <div class="chat-container">
-    <!-- 侧边栏 -->
-    <div class="sidebar">
-      <div class="sidebar-header">
-        <h2>对话历史</h2>
+  <div class="app-container">
+    <!-- 对话模式内容 -->
+    <div v-if="selectedFeature === 'chat'" class="chat-container">
+      <!-- 侧边栏 -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <h2>对话历史</h2>
 
-        <button class="btn btn-primary new-chat-btn" @click="deleteAllChat">
-          删除所有对话
-        </button>
-        <button class="btn btn-primary new-chat-btn" @click="createNewChat">
-          新对话
-        </button>
-      </div>
+          <button class="btn btn-primary new-chat-btn" @click="deleteAllChat">
+            删除所有对话
+          </button>
+          <button class="btn btn-primary new-chat-btn" @click="createNewChat">
+            新对话
+          </button>
+        </div>
       
       <div class="sessions-list">
         <div
@@ -154,6 +156,7 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
@@ -165,7 +168,6 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Select, Option } from 'view-ui-plus'
-
 
 
 
@@ -187,6 +189,22 @@ const selectedMode = ref("Ask")
 
 const messagesContainer = ref(null)
 const messageInput = ref(null)
+
+// 功能选择
+const selectedFeature = ref('chat')
+
+// PPT相关数据
+const pptStep = ref('upload')
+const pptxFile = ref(null)
+const pdfFile = ref(null)
+const selectedPages = ref(6)
+const pagesOptions = ref(Array.from({ length: 12 }, (_, i) => i + 3))
+const pptTaskId = ref('')
+const pptProgress = ref(0)
+const pptStatusMessage = ref('准备开始...')
+const pptDownloadLink = ref('')
+const pptFeedback = ref('')
+const pptFilename = ref('final.pptx')
 
 // 计算属性
 // 这里讲一下messagees的响应逻辑，只要chatStore.messages 里面的信息发生变化，computed就会立即捕捉，然后刷新显示
@@ -232,6 +250,23 @@ const handleModelChange = (value) => {
 const createNewChat = () => {
   chatStore.createNewSession()
   scrollToBottom()
+}
+
+// 功能选择方法
+const selectFeature = (feature) => {
+  selectedFeature.value = feature
+  if (feature === 'ppt') {
+    // 重置PPT状态
+    pptStep.value = 'upload'
+    pptxFile.value = null
+    pdfFile.value = null
+    selectedPages.value = 6
+    pptTaskId.value = ''
+    pptProgress.value = 0
+    pptStatusMessage.value = '准备开始...'
+    pptDownloadLink.value = ''
+    pptFeedback.value = ''
+  }
 }
 
 const deleteAllChat = () => {
@@ -379,10 +414,124 @@ onUnmounted(() => {
         rootPath: rootPath // 通过查询参数传递
       }
     })
-    
+
     // 如果你需要使用路由参数而不是查询参数，可以这样写：
     // 注意：需要在路由配置中定义对应的参数，例如：/tmpcode/:rootPath
     // router.push(`/tmpcode/${encodeURIComponent(rootPath)}`)
+  }
+
+  // PPT相关方法
+  const handleFileUpload = (event, fileType) => {
+    const file = event.target.files[0]
+    if (fileType === 'pptx') {
+      pptxFile.value = file
+    } else if (fileType === 'pdf') {
+      pdfFile.value = file
+    }
+  }
+
+  const goToGenerate = async () => {
+    // 检查后端是否运行
+    try {
+      await authStore.$axios.get('/')
+    } catch (error) {
+      alert('后端未运行或忙碌，您的任务将无法处理')
+      return
+    }
+
+    if (!pdfFile.value) {
+      alert('请上传PDF文件。')
+      return
+    }
+
+    const formData = new FormData()
+    if (pptxFile.value) {
+      formData.append('pptxFile', pptxFile.value)
+    }
+    formData.append('pdfFile', pdfFile.value)
+    formData.append('numberOfPages', selectedPages.value)
+
+    try {
+      const uploadResponse = await authStore.$axios.post('/api/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      pptTaskId.value = uploadResponse.data.task_id
+      pptStep.value = 'generate'
+      startPptGeneration()
+    } catch (error) {
+      console.error("Upload error:", error)
+      pptStatusMessage.value = '文件上传失败。'
+    }
+  }
+
+  const startPptGeneration = () => {
+    pptProgress.value = 0
+    pptStatusMessage.value = '开始生成...'
+
+    // 创建WebSocket连接
+    const socket = new WebSocket(`ws://localhost:8001/wsapi/${pptTaskId.value}`)
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      pptProgress.value = data.progress
+      pptStatusMessage.value = data.status
+      if (data.progress >= 100) {
+        socket.close()
+        fetchPptDownloadLink()
+      }
+    }
+
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error)
+      pptStatusMessage.value = 'WebSocket连接失败。'
+      socket.close()
+    }
+  }
+
+  const fetchPptDownloadLink = async () => {
+    try {
+      const downloadResponse = await authStore.$axios.get('/api/download', {
+        params: { task_id: pptTaskId.value },
+        responseType: 'blob'
+      })
+      pptDownloadLink.value = URL.createObjectURL(downloadResponse.data)
+      pptFilename.value = "ppagent_" + pptTaskId.value.replace('/', '_') + '.pptx'
+    } catch (error) {
+      console.error("Download error:", error)
+      pptStatusMessage.value += '\n无法完成任务。'
+    }
+  }
+
+  const submitPptFeedback = async () => {
+    if (!pptFeedback.value.trim()) {
+      alert('请输入您的反馈意见和联系方式。')
+      return
+    }
+    try {
+      await authStore.$axios.post('/api/feedback', {
+        feedback: pptFeedback.value,
+        task_id: pptTaskId.value
+      })
+      pptStatusMessage.value = '反馈提交成功。'
+      pptFeedback.value = ''
+    } catch (error) {
+      console.error("Feedback submission error:", error)
+      pptStatusMessage.value = '反馈提交失败。'
+    }
+  }
+
+  const backToUpload = () => {
+    pptStep.value = 'upload'
+    pptxFile.value = null
+    pdfFile.value = null
+    selectedPages.value = 6
+    pptTaskId.value = ''
+    pptProgress.value = 0
+    pptStatusMessage.value = '准备开始...'
+    pptDownloadLink.value = ''
+    pptFeedback.value = ''
   }
 
 </script>
@@ -392,8 +541,72 @@ onUnmounted(() => {
 
 
 <style scoped>
-.chat-container {
+.app-container {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  width: 100%;
+  padding: 2px 2px;
+  background-color: #fff;
+  color: #4a4a4a;
+  box-sizing: border-box;
+}
+
+
+.feature-header {
+  padding: 20px 15px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.feature-header h3 {
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  text-align: center;
+}
+
+.feature-options {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feature-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 12px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.feature-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.feature-btn.active {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.chat-container {
+  width: 100%;
+  display: flex;
+  flex: 1;
   height: 100vh;
   background-color: #f5f5f5;
 }
@@ -562,6 +775,10 @@ onUnmounted(() => {
 }
 
 .message-avatar {
+  margin-left: 10ph;
+  display:flex;
+  justify-content: left;
+  align-items: left;
   flex-shrink: 0;
 }
 

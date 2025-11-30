@@ -3,11 +3,36 @@
  */
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-
+import ChatView from '@/views/ChatView.vue'
+import PptGen from '@/views/PptGen.vue'
+import OpenView from '@/views/OpenView.vue'
 const routes = [
   {
     path: '/',
-    redirect: '/chat'
+    redirect: '/login'
+  },
+  {
+    path: '/home',
+    name: 'Home',
+    component: () => import('@/views/HomeView.vue'),
+    meta: { requiresGuest: true },
+    children:[
+      {
+        path:"open",
+        component: OpenView,
+        meta: { requiresAuth: true },
+      },
+      {
+        path:"chat",
+        component: ChatView,
+        meta: { requiresAuth: true },
+      },
+      {
+        path:"ppt",
+        component: PptGen,
+        meta: { requiresAuth: true },
+      }
+    ]
   },
   {
     path: '/login',
@@ -15,12 +40,12 @@ const routes = [
     component: () => import('@/views/LoginView.vue'),
     meta: { requiresGuest: true }
   },
-  {
-    path: '/chat',
-    name: 'Chat',
-    component: () => import('@/views/ChatView.vue'),
-    meta: { requiresAuth: true }
-  },
+  // {
+  //   path: '/chat',
+  //   name: 'Chat',
+  //   component: () => import('@/views/ChatView.vue'),
+  //   meta: { requiresAuth: true },
+  // },
   {
     path : '/tmpcode',
     name: 'Code',
@@ -55,7 +80,7 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/login')
   } else if (to.meta.requiresGuest && authStore.isAuthenticated) {
-    next('/chat')
+    next()
   } else {
     next()
   }

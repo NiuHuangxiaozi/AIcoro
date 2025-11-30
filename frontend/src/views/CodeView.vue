@@ -132,7 +132,7 @@ let editorView = null
 
 // 方法
 const goBack = () => {
-  router.push('/chat')
+  router.push('/home/chat')
 }
 
 

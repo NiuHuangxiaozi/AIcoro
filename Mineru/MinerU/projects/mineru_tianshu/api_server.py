@@ -419,7 +419,7 @@ async def health_check():
 
 if __name__ == '__main__':
     # 从环境变量读取端口，默认为8000
-    api_port = int(os.getenv('API_PORT', '8000'))
+    api_port = int(os.getenv('API_PORT', '8001'))
     
     logger.info("🚀 Starting MinerU Tianshu API Server...")
     logger.info(f"📖 API Documentation: http://localhost:{api_port}/docs")

@@ -57,7 +57,7 @@ export const useChatStore = defineStore('chat', () => {
   let streamController = null;
   
   const fetchAIResponse = (content, model, mode, controller, response_session_id) => { 
-    const apiUrl = 'http://localhost:8000/chat/sendstream'; // 替换为实际的 AI API 地址 
+    const apiUrl = 'http://localhost:8001/chat/sendstream'; // 替换为实际的 AI API 地址 
     const token = localStorage.getItem('access_token')
     console.log("fetchAIResponse is called")
     fetchEventSource(apiUrl, { 
