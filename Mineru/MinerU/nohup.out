@@ -1,0 +1,74 @@
+Downloading numpy (15.8MiB)
+Downloading magika (14.4MiB)
+Downloading opencv-python (63.9MiB)
+ Downloaded magika
+ Downloaded numpy
+ Downloaded opencv-python
+Uninstalled 4 packages in 144ms
+Installed 4 packages in 112ms
+[0;93m2025-12-26 13:25:53.406214968 [W:onnxruntime:Default, device_discovery.cc:164 DiscoverDevicesForPlatform] GPU device discovery failed: device_discovery.cc:89 ReadFileContents Failed to open file: "/sys/class/drm/card0/device/vendor"[m
+Traceback (most recent call last):
+  File "/home/niu/code/AIcoro/Mineru/MinerU/.venv/bin/mineru-api", line 4, in <module>
+    from mineru.cli.fast_api import main
+  File "/home/niu/code/AIcoro/Mineru/MinerU/mineru/cli/fast_api.py", line 19, in <module>
+    from mineru.cli.common import aio_do_parse, read_fn, pdf_suffixes, image_suffixes
+  File "/home/niu/code/AIcoro/Mineru/MinerU/mineru/cli/common.py", line 16, in <module>
+    from mineru.backend.vlm.vlm_middle_json_mkcontent import union_make as vlm_union_make
+  File "/home/niu/code/AIcoro/Mineru/MinerU/mineru/backend/vlm/vlm_middle_json_mkcontent.py", line 3, in <module>
+    from mineru.utils.config_reader import get_latex_delimiter_config, get_formula_enable, get_table_enable
+  File "/home/niu/code/AIcoro/Mineru/MinerU/mineru/utils/config_reader.py", line 7, in <module>
+    import torch
+  File "/home/niu/code/AIcoro/Mineru/MinerU/.venv/lib/python3.12/site-packages/torch/__init__.py", line 427, in <module>
+    from torch._C import *  # noqa: F403
+    ^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 463, in _lock_unlock_module
+KeyboardInterrupt
+[0;93m2025-12-26 13:26:02.599481974 [W:onnxruntime:Default, device_discovery.cc:164 DiscoverDevicesForPlatform] GPU device discovery failed: device_discovery.cc:89 ReadFileContents Failed to open file: "/sys/class/drm/card0/device/vendor"[m
+INFO:     Started server process [1342800]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Shutting down
+INFO:     Finished server process [1342800]
+ERROR:    Traceback (most recent call last):
+  File "/home/niu/anaconda3/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/home/niu/anaconda3/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/niu/anaconda3/lib/python3.12/asyncio/base_events.py", line 674, in run_until_complete
+    self.run_forever()
+  File "/home/niu/anaconda3/lib/python3.12/asyncio/base_events.py", line 641, in run_forever
+    self._run_once()
+  File "/home/niu/anaconda3/lib/python3.12/asyncio/base_events.py", line 1986, in _run_once
+    handle._run()
+  File "/home/niu/anaconda3/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/home/niu/code/AIcoro/Mineru/MinerU/.venv/lib/python3.12/site-packages/uvicorn/server.py", line 70, in serve
+    with self.capture_signals():
+         ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/niu/anaconda3/lib/python3.12/contextlib.py", line 144, in __exit__
+    next(self.gen)
+  File "/home/niu/code/AIcoro/Mineru/MinerU/.venv/lib/python3.12/site-packages/uvicorn/server.py", line 331, in capture_signals
+    signal.raise_signal(captured_signal)
+  File "/home/niu/anaconda3/lib/python3.12/asyncio/runners.py", line 157, in _on_sigint
+    raise KeyboardInterrupt()
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/niu/code/AIcoro/Mineru/MinerU/.venv/lib/python3.12/site-packages/starlette/routing.py", line 701, in lifespan
+    await receive()
+  File "/home/niu/code/AIcoro/Mineru/MinerU/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
+    return await self.receive_queue.get()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/niu/anaconda3/lib/python3.12/asyncio/queues.py", line 158, in get
+    await getter
+asyncio.exceptions.CancelledError
+
+Start MinerU FastAPI Service: http://0.0.0.0:8000
+The API documentation can be accessed at the following address:
+- Swagger UI: http://0.0.0.0:8000/docs
+- ReDoc: http://0.0.0.0:8000/redoc

@@ -47,7 +47,7 @@ const props = defineProps({
 
 /* 宣传标语文字 */
 .hero-title {
-  font-size: 55px;
+  font-size: 45px;
   font-weight: 700;
   letter-spacing: 1px;
   text-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);

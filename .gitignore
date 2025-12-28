@@ -1,1 +1,4 @@
-./generation_codes
+generation_codes
+ppt_generation
+searxng
+backend/test/test_generate_slide

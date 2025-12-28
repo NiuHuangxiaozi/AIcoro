@@ -55,9 +55,6 @@
         
         <div class="user-info">
           <span class="username">{{ user?.username }}</span>
-          <button class="btn btn-ghost logout-btn" @click="logout">
-            登出
-          </button>
         </div>
       </div>
 
@@ -316,11 +313,6 @@ const sendMessage = async () => {
     console.error('发送消息失败:', error)
     alert('发送失败，请重试')
   }
-}
-
-const logout = () => {
-  authStore.logout()
-  router.push('/login')
 }
 
 const formatDate = (dateString) => {

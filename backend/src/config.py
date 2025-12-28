@@ -46,5 +46,11 @@ class Settings(BaseModel):
     
     # code agent configs
     base_code_dir : str = "/home/niu/code/AIcoro/generation_codes"
-
+    # PPT生成配置
+    ppt_generation_dir : str = "/home/niu/code/AIcoro/ppt_generation"
+    
+    
+    # mcp 工具ip
+    MCP_URL:str = "http://localhost:8003/mcp"
+    MAX_STEPS:int = 3
 settings = Settings()

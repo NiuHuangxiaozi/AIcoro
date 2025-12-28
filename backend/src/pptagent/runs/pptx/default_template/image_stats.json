@@ -1,0 +1,80 @@
+{
+    "0237c4089461afe65b4e235bffbcab3ecdd574fb.png": {
+        "size": [
+            450,
+            448
+        ],
+        "appear_times": 1,
+        "slide_numbers": [
+            7
+        ],
+        "relative_area": 46.88425925925926,
+        "top_ranges_str": "7",
+        "caption": "Diagram: A map-like diagram showing various labeled regions and pathways, with directional indicators for North, South, East, and West, and a central area labeled \"Brahma.\""
+    },
+    "23f749d80eb9e545209eb3ffd4480e934ef23612.png": {
+        "size": [
+            1200,
+            900
+        ],
+        "appear_times": 1,
+        "slide_numbers": [
+            8
+        ],
+        "relative_area": 39.38117283950617,
+        "top_ranges_str": "8",
+        "caption": "Picture: A black and white photograph of an intricately carved stone temple with a domed roof and detailed sculptures, set within a walled courtyard."
+    },
+    "591402633e3c1438b9001fcf068003392cadbb4f.png": {
+        "size": [
+            1024,
+            683
+        ],
+        "appear_times": 1,
+        "slide_numbers": [
+            9
+        ],
+        "relative_area": 40.16358024691358,
+        "top_ranges_str": "9",
+        "caption": "Picture: A black and white photograph of the Jagannath Temple in Puri, India, showcasing its intricate stone architecture and towering spires against a cloudy sky."
+    },
+    "a3a829f8b4058da7719b8ff456543eb5f8fd1e2e.png": {
+        "size": [
+            775,
+            516
+        ],
+        "appear_times": 1,
+        "slide_numbers": [
+            10
+        ],
+        "relative_area": 23.392746913580247,
+        "top_ranges_str": "10",
+        "caption": "Picture: Ancient rock-cut cave temple with carved pillars and elephant statues, showcasing historical architecture."
+    },
+    "298534b1ee9d8070655f5330cf59401a64c1cd31.png": {
+        "size": [
+            231,
+            300
+        ],
+        "appear_times": 1,
+        "slide_numbers": [
+            11
+        ],
+        "relative_area": 32.820216049382715,
+        "top_ranges_str": "11",
+        "caption": "Picture: A black-and-white photograph of a woman performing a classical Indian dance, captured mid-pose with arms extended and a flowing skirt."
+    },
+    "51e66a0b42871c7b2f6863afc6ee46eb5203d47d.png": {
+        "size": [
+            600,
+            866
+        ],
+        "appear_times": 1,
+        "slide_numbers": [
+            12
+        ],
+        "relative_area": 37.52121913580247,
+        "top_ranges_str": "12",
+        "caption": "Diagram: This diagram compares the structure of a Hindu temple to the human body, showing corresponding parts like the Garbhagriha (womb) to the Muladhara chakra and the Gopuram (tower) to the feet of the body."
+    }
+}

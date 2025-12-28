@@ -3,15 +3,15 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import uuid4
 from pydantic import BaseModel, Field
-
+from datetime import UTC
 
 class User(BaseModel):
     """用户模型"""
     id: str = Field(default_factory=lambda: str(uuid4()))
     username: str
     password_hash: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
 
 
 # 一般的文本回答
@@ -20,7 +20,7 @@ class Message(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
     content: str
     role: str  # "user" 或 "assistant"
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=datetime.now)
     code_root_path :  Optional[str] = None
 
     
@@ -32,8 +32,8 @@ class Session(BaseModel):
     title: str = "新对话"
     messages: List[Message] = []
     model: str = "deepseek-chat"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
 
 
 # API请求/响应模型
@@ -86,3 +86,11 @@ class SessionResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     message_count: int
+
+
+
+# PPT生成请求/响应模型
+
+class PPTResponse(BaseModel):
+    """PPT生成响应"""
+    task_id: str

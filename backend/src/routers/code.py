@@ -96,7 +96,7 @@ async def get_project_tree(
     project_name: str = Query(..., 
                              description="需要查询文件树的项目路径",
                              min_length=1,  # 可选：限制项目名最小长度，避免无效值
-                             example="/home/code/my-first-project")  # 可选：提供示例值，方便接口文档测试
+                             examples="/home/code/my-first-project")  # 可选：提供示例值，方便接口文档测试
     ):
     """获取项目的文件树结构"""
     project_path = Path(project_name)
@@ -128,11 +128,11 @@ async def get_file_content(
                 project_name: str = Query(..., 
                              description="需要查询文件树的项目路径",
                              min_length=1,  # 可选：限制项目名最小长度，避免无效值
-                             example="/home/code/my-first-project"),  # 可选：提供示例值，方便接口文档测试,
+                             examples="/home/code/my-first-project"),  # 可选：提供示例值，方便接口文档测试,
                 file_path: str = Query(...,
                             description="文件名字",
                              min_length=1,  # 可选：限制项目名最小长度，避免无效值
-                             example="main.cpp"),
+                             examples="main.cpp"),
                 ):
     """获取文件内容"""
     # 安全检查：防止路径遍历攻击
@@ -181,7 +181,7 @@ async def get_file_content(
 @router.get("/projects/download")
 async def download_project(
     background_tasks: BackgroundTasks,
-    project_name: str =  Query(...,description="下载文件",example="main.cpp")
+    project_name: str =  Query(...,description="下载文件",examples="main.cpp")
     ):
     """下载项目的tar.gz文件"""
     project_path = Path(project_name)

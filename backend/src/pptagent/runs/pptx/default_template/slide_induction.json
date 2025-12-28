@@ -1,0 +1,189 @@
+{
+    "opening": {
+        "slides": [
+            1
+        ],
+        "template_id": 1,
+        "elements": [
+            {
+                "name": "main title",
+                "type": "text",
+                "data": [
+                    "Tourism & Culture:"
+                ]
+            },
+            {
+                "name": "section title",
+                "type": "text",
+                "data": [
+                    "APPRECIATING THE TANGIBLE & THE INTANGIBLE OF BHUBANESWAR THROUGH CULTURAL TOURISM"
+                ]
+            },
+            {
+                "name": "sub title",
+                "type": "text",
+                "data": [
+                    "By Ayona Bhaduri"
+                ]
+            }
+        ]
+    },
+    "table of contents": {
+        "slides": [
+            2
+        ],
+        "template_id": 2,
+        "elements": [
+            {
+                "name": "main title",
+                "type": "text",
+                "data": [
+                    "What is culture?"
+                ]
+            },
+            {
+                "name": "section/main title",
+                "type": "text",
+                "data": [
+                    "In Sri Aurobindo’s words,",
+                    "The culture of a people may be described as the expression of a consciousness of life which formulates itself in three aspects.",
+                    "There is a side of thought, of ideal, of upward will and soul’s aspiration, which is reflected in the people’s philosophy and religion.",
+                    "There is a side of creative self-expression and appreciative aesthesis, intelligence and imagination, which finds expression in its art, poetry, literature, music, dance",
+                    "And, there is a side of practical and outward formulation, which is provided for in its society and politics"
+                ]
+            }
+        ]
+    },
+    "section outline": {
+        "slides": [
+            3,
+            5,
+            6,
+            8,
+            9,
+            10,
+            12,
+            13
+        ],
+        "template_id": 3,
+        "elements": [
+            {
+                "name": "main title",
+                "type": "text",
+                "data": [
+                    "What is Tourism?"
+                ]
+            },
+            {
+                "name": "paragraph",
+                "type": "text",
+                "data": [
+                    "The World Tourism Organisation defines tourism in terms which go",
+                    "“ beyond the common perception of tourism as being limited to holiday activity only”, as people “ travelling to and staying in places outside their usual environment for not more than one consecutive year for leisure, business and other purposes”",
+                    "Its importance was recognised in the Manila Declaration on World Tourism of 1980 as an activity essential to the life of nations because of its direct effects on the social, cultural, educational, and economic sectors of national societies and on their international relations",
+                    "Today, tourism is a major source of income for many countries, and affects the economy of both the source and the host countries, in some cases being of vital importance"
+                ]
+            }
+        ]
+    },
+    "ending": {
+        "slides": [
+            14
+        ],
+        "template_id": 14,
+        "elements": [
+            {
+                "name": "main title",
+                "type": "text",
+                "data": [
+                    "ODISSI DANCER – A Global Ambassador of cultural heritage of Odisha"
+                ]
+            },
+            {
+                "name": "main content",
+                "type": "text",
+                "data": [
+                    "Kelucharan Mahapatra’s artistic journey touches every key aspect of the cultural life of Odisha\nBe it the traditional expertise of the Chitrakars, or the entertaining art forms of Gotipua and Jatra parties, or the Ras Leela performances soaked in bhakti, or the innovations attempted at the Annapurna Theatre Groups, all these experiences, acquired not through formal training but through a continuous interaction with life, contributed richly to his understanding and creation of the Odissi form.\nAnd it is the magnanimous presence and personality of this great Guru, his detailed teaching and in depth insights into the entire panorama of Odia culture, that have drawn dancers from across the world to his door to learn his art from him, and continue to attract many more\nSo we see that through Odissi, Kelu Babu was able to not only take Oriya culture to the world but he also succeeded in bringing the world to Odisha to appreciate her rich intangible heritage."
+                ]
+            }
+        ]
+    },
+    "Central Diagram with Compass Rose:image": {
+        "template_id": 7,
+        "slides": [
+            7
+        ],
+        "elements": [
+            {
+                "name": "main image",
+                "type": "image",
+                "data": [
+                    "Diagram: A map-like diagram showing various labeled regions and pathways, with directional indicators for North, South, East, and West, and a central area labeled \"Brahma.\""
+                ]
+            }
+        ]
+    },
+    "Title with bullet-pointed text and a decorative graphic element:text": {
+        "template_id": 4,
+        "slides": [
+            4
+        ],
+        "elements": [
+            {
+                "name": "main title",
+                "type": "text",
+                "data": [
+                    "What do we mean by Cultural Tourism?"
+                ]
+            },
+            {
+                "name": "paragraph",
+                "type": "text",
+                "data": [
+                    "Cultural Tourism is the subset of tourism concerned with a particular country or region’s culture, specifically the lifestyle of the people in those geographical areas, the history of those people, their art and craft, their language and literature, their architecture, their religion, and all other elements that have helped shape their way of life."
+                ]
+            },
+            {
+                "name": "quote",
+                "type": "text",
+                "data": [
+                    "Every race has something essential to contribute to the world’s civilisation in the course of its own self-expression and self-realisation. ",
+                    "And the essential contribution of India is simply her Indianness. ",
+                    "All that India has to offer to the world proceeds from her philosophy. ",
+                    "That this philosophy has held India together and seen her through many upheavals – political, social, economic, intellectual, is brought to the fore when Max Muller, the famous scholar and Orientalist, remarks, ‘There is, in fact, an unbroken continuity between the most modern and the most ancient phases of Hindu thought, extending over more than three thousand years.’"
+                ]
+            }
+        ]
+    },
+    "A black and white photograph on the left side of the slide and a block of text on the right side.:image": {
+        "template_id": 11,
+        "slides": [
+            11
+        ],
+        "elements": [
+            {
+                "name": "main title",
+                "type": "text",
+                "data": [
+                    "Born out of two ancient traditions, the Mahari – servants of God who, consecrated to the deity as young maidens, sang and danced for the deity alone within the temple’s sanctum sanctorum, and the Gotipua – young boys dressed up as women who sang and danced in public propagating the Vaishnava consciousness of the union of  humanity (the female) and the Infinite (the only male), Odissi, deeply impacted over centuries by the religious, social and political changes of its birth land Orissa, was reconstructed from extant dance treatises such as the invaluable Abhinaya Chandrika of the 15th century  and the endless sculptural poses on the Orissan temple walls, these serving as reference points of authenticity to the scholars and gurus who set themselves the task of identifying what was true to the form, refining it and finally not only codifying the grammar and technique, but also devising a fixed repertory for the dance."
+                ]
+            },
+            {
+                "name": "main image",
+                "type": "image",
+                "data": [
+                    "Picture: A black-and-white photograph of a woman performing a classical Indian dance, captured mid-pose with arms extended and a flowing skirt."
+                ]
+            }
+        ]
+    },
+    "functional_keys": [
+        "opening",
+        "table of contents",
+        "section outline",
+        "ending"
+    ],
+    "language": {
+        "lid": "en"
+    }
+}

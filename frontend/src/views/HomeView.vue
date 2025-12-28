@@ -1,9 +1,13 @@
 <template>
+
     <div class="app-container">
       <!-- 功能选择栏 -->
       <div class="feature-sidebar">
         <div class="feature-header">
           <h3>Feature Selection</h3>
+          <button class="btn btn-ghost logout-btn" @click="handleLogout">
+            Logout
+          </button>
         </div>
         <div class="feature-options">
           <button
@@ -33,21 +37,32 @@
 
 <script setup>
 // 当前选中的功能
-import { WidgetType } from '@codemirror/view'
 import { ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
+
+const authStore = useAuthStore()
+const router = useRouter()
+
 const selectedFeature = ref('chat')
 
 // 切换功能方法
 const selectFeature = (feature) => {
   selectedFeature.value = feature
 }
+
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/login')
+}
+
 </script>
 
 <style scoped>
 
 .app-container {
   display: flex;
-  width: 100vw;        /* 占满视口宽度 */
+  width: 100%;        /* 占满视口宽度 */
   height: 100vh;       /* 占满视口高度 */
   background-color: #f5f5f5;
   overflow: hidden;    /* 防止子元素溢出导致滚动 */
@@ -64,16 +79,37 @@ const selectFeature = (feature) => {
 }
 
 .feature-header {
-  padding: 20px 15px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.05); /* 可选：轻微背景提升层次 */
+  backdrop-filter: blur(4px); /* 可选：毛玻璃效果（如果背景是半透明）*/
 }
 
 .feature-header h3 {
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
   margin: 0;
-  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+.feature-header .logout-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.feature-header .logout-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .feature-options {

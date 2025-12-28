@@ -1,26 +1,6 @@
 <template>
   <div class="ppt-generator">
     <div class="container">
-      <!-- 左边历史记录栏 -->
-      <div class="left-panel">
-        <div class="history-header">
-          <h3>生成历史记录</h3>
-        </div>
-        <div class="history-list">
-          <div v-if="pptHistory.length === 0" class="no-history">
-            <p>暂无生成记录</p>
-          </div>
-          <div v-else v-for="item in pptHistory" :key="item.id" class="history-item">
-            <div class="history-title">{{ item.title }}</div>
-            <div class="history-date">{{ item.createdAt }}</div>
-            <div class="history-actions">
-              <button class="btn-download" @click="downloadPPT(item)">下载</button>
-              <button class="btn-preview" @click="previewPPT(item)">预览</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- 右边生成界面 -->
       <div class="right-panel">
         <div class="generator-header">
@@ -42,6 +22,8 @@
             </div>
           </div>
         </div>
+        
+        <progress :value="progress" max="100" class="progress-bar"></progress>
 
         <div class="input-section">
           <label for="ppt-content" class="input-label">PPT内容主题</label>
@@ -61,6 +43,7 @@
             <button class="btn-upload-template" @click="triggerFileInput('pptx')">
               <span class="btn-icon">📄</span>
               选择PPT模板
+              <span v-if="pptxFile" class="uploaded-symbol">✔️</span>
             </button>
               <!-- 隐藏的文件输入框（关键！） -->
             <input
@@ -74,6 +57,7 @@
             <button class="btn-upload-pdf" @click="triggerFileInput('pdf')">
               <span class="btn-icon">📄</span>
               选择PDF模板
+              <span v-if="pdfFile" class="uploaded-symbol">✔️</span>
             </button>
             <input
               ref="pdfInputRef"
@@ -86,15 +70,25 @@
             <div class="pages-selector">
               <label for="page-count" class="selector-label">生成页数：</label>
               <select id="page-count" v-model="selectedPages" class="page-select">
-                <option value="5">5页</option>
-                <option value="10">10页</option>
-                <option value="15">15页</option>
-                <option value="20">20页</option>
+                <option value="3">3页</option>
+                <option value="6">6页</option>
+                <option value="9">9页</option>
+                <option value="12">12页</option>
               </select>
             </div>
+
+
+            <button
+              v-if="downloadLink"
+              class="btn-download-pptx"
+              @click="downloadPPTX"
+            >
+              <span class="btn-icon">📥</span>
+              下载PPTX
+            </button>
+
           </div>
         </div>
-
         <div class="generate-section">
           <button
             class="btn-generate"
@@ -110,7 +104,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { usePptStore } from '@/stores/ppt'
+const pptStore = usePptStore()
 // 声明两个“盒子”，用来装文件
 const pdfFile = ref(null)    // 相当于 Vue 2 的 this.pdfFile
 const pptxFile = ref(null)   // 相当于 this.pptxFile
@@ -124,6 +120,10 @@ const selectedPages = ref('10')
 const isGenerating = ref(false)
 const inferenceOutput = ref('')
 
+// 每一次生成ppt都是一次任务
+const taskId = ref('')
+const downloadLink = ref(null)
+const filename = ref('')
 
 
 // 3. 点击按钮时，触发隐藏 input 的 click 事件
@@ -138,70 +138,26 @@ function triggerFileInput(type) {
 
 
 const generatePPT = async () => {
+
+  if (!pdfFile.value) {
+    alert('请选择PPT模板和PDF模板')
+    return
+  }
   if (!pptContent.value.trim()) return
 
   isGenerating.value = true
   inferenceOutput.value = ''
 
   try {
-    // 模拟生成过程
-    await new Promise(resolve => setTimeout(resolve, 2000))
 
-    inferenceOutput.value = `正在基于主题"${pptContent.value}"生成${selectedPages.value}页的PPT...\n\n分析主题内容中...\n整理结构布局...\n生成演示文稿...`
-
-    // 模拟完成后添加到历史记录
-    const newPPT = {
-      id: Date.now(),
-      title: pptContent.value.substring(0, 20) + '...',
-      createdAt: new Date().toLocaleString(),
-    }
-    pptHistory.value.unshift(newPPT)
-
+      taskId.value = await pptStore.PPTGen(pptxFile.value, pdfFile.value, pptContent.value, selectedPages.value)
+      startGeneration(taskId.value)
+      console.log("ppt is ok", taskId)
   } catch (error) {
     console.error('生成失败:', error)
   } finally {
     isGenerating.value = false
   }
-}
-
-const downloadPPT = (item) => {
-  // TODO: 实现下载逻辑
-  alert(`下载PPT: ${item.title}`)
-}
-
-const previewPPT = (item) => {
-  // TODO: 实现预览逻辑
-  alert(`预览PPT: ${item.title}`)
-}
-
-// 模拟历史记录数据
-const mockHistory = [
-  {
-    id: 1,
-    title: '产品发布会PPT',
-    createdAt: '2024-01-15 14:30',
-  },
-  {
-    id: 2,
-    title: '技术分享演示',
-    createdAt: '2024-01-14 09:15',
-  },
-  {
-    id: 3,
-    title: '市场分析报告',
-    createdAt: '2024-01-13 16:45',
-  }
-]
-
-// 方法
-const selectTemplate = () => {
-  // TODO: 实现文件选择逻辑
-  alert('选择PPT模板功能')
-}
-
-const selectPDF = () => {
-  // TODO: 实现PDF文件选择逻辑
-  alert('选择PDF文件功能')
 }
 
 // 上载pdf和ppt文件
@@ -215,10 +171,72 @@ const handleFileUpload = (event, fileType) => {
   }
 }
 
+
+
+
+// 在ppt生成的过程中显示进度并最终显示能够下载。
+const progress = ref(0)
+const statusMessage = ref('')
+// 这个是一个全双工的链接，然后在这个链接上进行通信
+const socket = ref(null)
+
+const startGeneration = async (taskId) => {
+      console.log("Connecting to websocket", `/pptgen/wsapi/${taskId}`)
+      const socket = new WebSocket(`ws://localhost:8001/pptgen/wsapi/${taskId}`)
+      console.log("socket", socket)
+      socket.onmessage = (event) => {
+        console.log("Socket Received message:", event.data)
+        const data = JSON.parse(event.data)
+        progress.value = data.progress
+        statusMessage.value = data.status
+
+        inferenceOutput.value = data.status
+        if (data.progress >= 100) {
+          console.log("progress is 100, close socket")
+          socket.close()
+          fetchDownloadLink()
+        }
+    }
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error)
+      socket.close()
+    }
+  }
+
+const downloadPPTX = () => {
+  if (!downloadLink.value) 
+  {
+    alert('pptx还未生成完毕，请稍后再试')
+    return
+  }
+  const link = document.createElement('a');
+  link.href = downloadLink.value;
+  link.download = filename.value;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const fetchDownloadLink = async () => {
+  try {
+        const downloadResponse = await pptStore.getDownloadLink(taskId.value)
+        console.log("downloadResponse", downloadResponse)
+        downloadLink.value = URL.createObjectURL(downloadResponse) // 将blob转换为url
+        filename.value = "ppagent_" + taskId.value.replace('/', '_') + '.pptx'
+  } catch (error) {
+    console.error("Download error:", error)
+    statusMessage.value += '\nFailed to continue the task.'
+  }
+}
+
 // 组件挂载时加载历史记录
 onMounted(() => {
-  pptHistory.value = mockHistory
+  // pptHistory.value = mockHistory
+  
 })
+onBeforeUnmount(() => {
+    socket.close()
+  })
 </script>
 
 <style scoped>
@@ -455,6 +473,7 @@ onMounted(() => {
 
 .control-row {
   display: flex;
+  justify-content: center;
   gap: 15px;
   align-items: center;
   flex-wrap: wrap;
@@ -565,4 +584,50 @@ onMounted(() => {
     font-size: 1.5rem;
   }
 }
+
+.uploaded-symbol {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: green;
+  font-size: 12px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  margin-bottom: 10px;
+  appearance: none;
+  background-color: #f3f3f3;
+}
+
+
+/* 下载按钮的样式 */
+.btn-download-pptx {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #4CAF50; /* 绿色，表示成功/完成 */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn-download-pptx:hover {
+  background-color: #45a049;
+}
+
+.btn-download-pptx:active {
+  transform: scale(0.98);
+}
+
+.btn-icon {
+  font-size: 18px;
+}
+
 </style>

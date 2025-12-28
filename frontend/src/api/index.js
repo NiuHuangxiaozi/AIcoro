@@ -99,4 +99,14 @@ export const codeAPI = {
   })
 }
 
+export const pptgenAPI = {
+  // 生成PPT
+  generatePPT: (pptxFile, pdfFile, topic, numberOfPages) => api.post('/pptgen/generate', {pptxFile, pdfFile, topic, numberOfPages},{
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  }),
+  getDownloadLink_api: (taskId) => api.get(`/pptgen/api/download`, { params: { task_id: taskId }, responseType: 'blob' })
+}
+
 export default api

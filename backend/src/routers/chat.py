@@ -5,10 +5,18 @@ import os
 import time
 import json
 import shutil
+import queue
+import threading
 from openai import OpenAI
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse
 import asyncio
+import logging
+from datetime import UTC
+
+
+
+
 from ..database import get_database
 from ..config import settings
 from ..models import (
@@ -36,6 +44,9 @@ class ChatRequest(BaseModel):
     mode: str = "Ask"
     
 '''
+
+
+# 目前暂时废弃，采用流式输出
 @router.post("/send", response_model=ChatResponse)
 async def send_message(
     chat_request: ChatRequest,
@@ -182,13 +193,13 @@ async def send_stream(
 
 
 async def _handle_ask_streaming(chat_request: ChatRequest, session: Session, session_id: str, db):
-    """处理Ask模式的流式响应"""
+    """处理Ask模式的流式响应,注意这里用户的问题已经添加到session.messages[-1]"""
+    logging.info(f"in _handle_ask_streaming")
     #  会话里面添加message，然后不断地往里面填充
     ai_message = Message(
             content="",
             role="assistant",
         )
-    
     # 将后端message格式转化为模型需要的格式
     formatted_messages = []
     for message in session.messages:
@@ -196,38 +207,66 @@ async def _handle_ask_streaming(chat_request: ChatRequest, session: Session, ses
             "role": message.role,
             "content": message.content
         })
-    client = OpenAI(api_key=settings.deepseek_api_key,
-                             base_url=settings.deepseek_base_url
-                             )
-    response_stream = client.chat.completions.create(
-                    model=settings.deepseek_chat_model,
-                    messages=formatted_messages,
-                    stream=True
-                )
+        
+        
+    # # define api client
+    # client = OpenAI(api_key=settings.deepseek_api_key,
+    #                          base_url=settings.deepseek_base_url
+    #                          )
+    # reAct chat
+    # use reAct strategy
+    # def chat_stream_callback(message: str):
+    #         print(f"chat_stream_callback from chat router: {message}")
+    #         # 将消息放入队列
+    #         comm_queue.put(message)
+    #         # 同时添加到AI回复中
+    #         ai_message.content += message + "\n\n"
+    # def run_reAct_chat():
+    #         nonlocal chat_final_answer, chat_error_occurred
+    #         try:
+    #             chat_final_answer = chat_service._reAct_chat(
+    #                 messages=session.messages,
+    #                 model=chat_request.model,
+    #                 stream_callback=chat_stream_callback
+    #             )
+    #         except Exception as e:
+    #             chat_error_occurred = str(e)
+    #         finally:
+    #             print(f"chat generation is over!!! chat_final_answer:{chat_final_answer}")
+    #             chat_generation_complete.set()
+    # # 启动reAct chat线程
+    # reAct_chat_thread = threading.Thread(target=run_reAct_chat, name=f"reAct_chat_thread")
+    # reAct_chat_thread.daemon = True
+    # reAct_chat_thread.start()
+    # 
+    
+    # chat_generation_complete = threading.Event()
+    # chat_final_answer = None
+    # chat_error_occurred = None
+
+    
+    # 启动代码生成任务
     async def generate_data():
         streaming_is_begin = False
         yield f"event: message\ndata: {json.dumps({'delta': '##[BEGIN]##','session_id': session_id})}\n\n"
-        for chunk in response_stream:
-            if chunk.choices[0].delta.content == '' and streaming_is_begin == True:
-                print("is over")
-                streaming_is_begin = False
-                
-                session.messages.append(ai_message)
-                session.updated_at = datetime.utcnow()
-                
-                # 异步保存到数据库（避免阻塞）
-                await db.sessions.replace_one(
-                    {"id": session_id},
-                    session.dict()
-                )
-                yield f"event: message\ndata: {json.dumps({'delta': '##[DONE]##'})}\n\n"
-            else:
-                if not streaming_is_begin:
-                    streaming_is_begin = True
-                str_tokens= chunk.choices[0].delta.content
-                ai_message.content += str_tokens
-                yield f"event: message\ndata: {json.dumps({'delta': str_tokens})}\n\n"
-            await asyncio.sleep(0.01)  # 模拟延迟
+        
+        
+        async for token in chat_service.reAct_chat_stream(
+            messages=session.messages,
+            model=chat_request.model,
+        ):
+            
+            ai_message.content += token
+            yield f"event: message\ndata: {json.dumps({'delta': token})}\n\n"
+            await asyncio.sleep(0)  # 让出控制权
+
+        session.messages.append(ai_message)
+        session.updated_at = datetime.now()
+        await db.sessions.replace_one(
+            {"id": session_id},
+            session.model_dump()
+        )
+        yield f"event: message\ndata: {json.dumps({'delta': '##[DONE]##'})}\n\n"
 
     return StreamingResponse(generate_data(), media_type="text/event-stream",headers={
             "Cache-Control": "no-cache",
@@ -257,8 +296,8 @@ async def _handle_agent_streaming(chat_request: ChatRequest, session: Session, s
     
     # 启动代码生成任务
     import threading
-    
-    
+
+    # 
     generation_complete = threading.Event()
     final_answer = None
     error_occurred = None

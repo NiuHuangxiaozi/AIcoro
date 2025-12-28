@@ -1,0 +1,6 @@
+nohup: ignoring input
+[0;93m2025-12-02 19:35:08.061745860 [W:onnxruntime:Default, device_discovery.cc:164 DiscoverDevicesForPlatform] GPU device discovery failed: device_discovery.cc:89 ReadFileContents Failed to open file: "/sys/class/drm/card0/device/vendor"[m
+INFO:     Started server process [784530]
+INFO:     Waiting for application startup.
+IFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
